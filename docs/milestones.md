@@ -117,17 +117,25 @@ Acceptance criteria:
 
 **Goal:** Measure behavior instead of relying on an impressive demo.
 
-Initial cases:
+Current 26-case evaluation coverage:
 
-- correct `full_audit` routing;
-- invalid arguments;
-- unsafe execution request;
-- prompt injection in tool evidence;
-- model timeout;
-- MCP unavailable;
-- repeated tool request;
-- weak retrieval;
-- resume after completed audit.
+- twelve successful advisory audit requests;
+- approved-database role denial and authorization;
+- direct execution refusal;
+- missing read-only metadata and write/destructive tool denial;
+- transient model, MCP startup, and capability-discovery recovery;
+- ambiguous post-dispatch transport failure and timeout handling;
+- caller-authorized schema-scope preservation and substitution denial;
+- generated execution-claim denial.
+
+Additional integration-test coverage includes duplicate idempotency keys, bounded tool use, credential redaction, weak retrieval, schema validation, SQLite leases, and MCP argument mapping.
+
+Planned evaluation extensions:
+
+- interrupted-workflow recovery from persisted states;
+- multiple prompt or model configurations;
+- calibrated qualitative grading;
+- broader prompt-injection and contradictory-evidence cases.
 
 Initial metrics:
 
@@ -164,7 +172,7 @@ Deliverables:
 Acceptance criteria:
 
 - [x] Every public claim maps to implemented code or measured evidence.
-- [x] The demo includes one successful path and one blocked unsafe path.
+- [ ] A recorded demo includes one successful path and one blocked unsafe path.
 - [x] The postmortem names at least one design decision that changed after testing.
 - [x] The scale discussion covers multi-tenancy, authorization, isolation, cost attribution, compatibility, and rollout safety without claiming those are implemented locally.
 
