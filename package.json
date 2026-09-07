@@ -1,0 +1,51 @@
+{
+  "name": "pgtriage-agent-lab",
+  "version": "0.1.0",
+  "description": "A production-shaped TypeScript agent runtime for pgtriage with deterministic policy, durable workflows, retrieval, and evaluation.",
+  "private": true,
+  "license": "MIT",
+  "author": "Manas Maheshwari",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manas-maheshwari/pgtriage-agent-lab.git"
+  },
+  "homepage": "https://github.com/manas-maheshwari/pgtriage-agent-lab#readme",
+  "bugs": {
+    "url": "https://github.com/manas-maheshwari/pgtriage-agent-lab/issues"
+  },
+  "keywords": [
+    "agent-runtime",
+    "mcp",
+    "postgresql",
+    "pgtriage",
+    "typescript"
+  ],
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo:fixture": "tsx src/cli.ts --mode=fixture",
+    "demo:fixture:concise": "tsx src/cli.ts --mode=fixture --output=concise",
+    "demo:mcp": "tsx src/cli.ts --mode=mcp-fixture",
+    "demo:mcp:concise": "tsx src/cli.ts --mode=mcp-fixture --output=concise",
+    "demo:real": "tsx src/cli.ts --mode=real",
+    "demo:real:concise": "tsx src/cli.ts --mode=real --output=concise",
+    "eval": "tsx src/eval/run-eval.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.121.0",
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

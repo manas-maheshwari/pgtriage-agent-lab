@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+dist/
+runs/
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
+.env
+!package-lock.json
