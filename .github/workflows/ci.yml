@@ -27,10 +27,19 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        run: npm run check
+        run: npm run check:all
 
       - name: Run tests
         run: npm test
+
+      - name: Run local Cloudflare tests
+        run: npm run test:cloudflare
+
+      - name: Install browser for local tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run local browser tests
+        run: npm run test:browser
 
       - name: Run evaluation suite
         run: npm run eval

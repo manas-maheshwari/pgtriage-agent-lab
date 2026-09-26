@@ -1,0 +1,61 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pgtriage-agent-lab-staging",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-09-25",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "MODEL_MODE": "workers-ai",
+    "LOCAL_ONLY": "false",
+    "INFERENCE_ENABLED": "false",
+    "LIVE_UNTIL": ""
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "INVESTIGATIONS",
+        "class_name": "Investigation"
+      },
+      {
+        "name": "QUOTA",
+        "class_name": "InferenceQuota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Investigation"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "InferenceQuota"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.md"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "send_metrics": false,
+  "ai": {
+    "binding": "AI"
+  },
+  "observability": {
+    "enabled": false
+  }
+}

@@ -8,3 +8,9 @@ runs/
 *.db-wal
 .env
 !package-lock.json
+
+.wrangler/
+.dev.vars*
+.env.*
+playwright-report/
+test-results/
