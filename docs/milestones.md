@@ -176,6 +176,37 @@ Acceptance criteria:
 - [x] The postmortem names at least one design decision that changed after testing.
 - [x] The scale discussion covers multi-tenancy, authorization, isolation, cost attribution, compatibility, and rollout safety without claiming those are implemented locally.
 
+## Milestone 7: Cloudflare-hosted synthetic review path
+
+**Goal:** Demonstrate the same deterministic control-plane principles in a small,
+authenticated browser application with real hosted inference and durable state,
+without connecting a database or exposing write capabilities.
+
+Deliverables:
+
+- Worker request boundary and static browser UI;
+- Cloudflare Access JWT verification and owner-bound sessions;
+- Investigation and shared-quota Durable Objects;
+- Workers AI model adapter with structured output;
+- fixed synthetic diagnostic and bundled runbook retrieval;
+- grounded-output and evidence/citation validation;
+- local Worker, Durable Object and browser tests;
+- private live acceptance record and public saved walkthrough;
+- sanitized chronological AI-development prompt history.
+
+Acceptance criteria:
+
+- [x] Missing or invalid hosted authentication fails closed.
+- [x] The first turn persists evidence and a validated answer.
+- [x] Refresh restores state without another model call.
+- [x] A follow-up uses saved evidence without rerunning diagnostics or relying on prior chat.
+- [x] Provider errors and invalid output produce a bounded failure with no silent model fallback.
+- [x] Attempt quota is reserved before inference, survives failures, and can be durably shut down.
+- [x] Synthetic evidence is separated from unconfirmed hypotheses and diagnostic next checks.
+- [x] Local suites pass 35 original, 40 Cloudflare and 3 browser tests; the 26 deterministic eval cases also pass.
+- [x] One private real-model run and its limitations are preserved as review artifacts.
+- [x] Checked-in staging configuration has inference disabled and contains no private identity or credential values.
+
 ## Working discipline
 
 At each milestone:

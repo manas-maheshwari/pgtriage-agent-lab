@@ -651,3 +651,38 @@ Redactions within this prompt: none.
 - Both type checks and the Markdown target-link check passed. The existing 78-test
   result is retained from the preceding implementation turn; documentation/capture
   preparation did not invoke live inference or rerun model tests.
+
+## Entry 020 — 2026-09-26 — User — Make the project understandable outside the assignment
+
+### Actual user prompts
+
+```text
+also did you read the readme for the agent lab, looks right ? anyone whtout the project context of cloudflare will also look at it, so we need to make sure the project is well set
+```
+
+After a read-only review proposed a project-first introduction, separate runtime
+paths and linked assignment details, the user approved:
+
+```text
+go ahead
+```
+
+Redactions within these prompts: none.
+
+### Assistant action notes — summary, not transcript
+
+- Reframed the README around evidence-based investigations, explicit tool access,
+  workflow state and failure handling. Kept the walkthrough and prompt/live-result
+  links prominent for readers without application context.
+- Distinguished the local MCP runtime from the synthetic Cloudflare chat adapter,
+  including memory versus opt-in SQLite, model selection and real-database access.
+- Moved assignment mapping and dated staging details to `cloudflare/README.md`;
+  moved real pgtriage setup to `docs/local-runtime.md`. Retained limitations and
+  the existing local-demo anchor used by the walkthrough.
+- Preserved the concurrent documentation edits supplied by another task. No
+  runtime code, deployment, credentials, inference configuration or quota changed.
+- Local link/anchor and npm-script checks passed, as did both TypeScript checks.
+  The fixture MCP smoke demo reached `COMPLETED`. Its first sandboxed invocation
+  was blocked from opening a temporary IPC socket; the permitted local retry passed.
+  The 78-test and 26-evaluation results remain the earlier recorded suite, not a
+  claim that those full suites were rerun for this documentation-only change.

@@ -4,6 +4,11 @@
 
 In two to three minutes, show that pgtriage can operate as a bounded MCP evidence source inside a production-shaped agent runtime. The point is not model cleverness. The point is that deterministic code owns scope, state, policy, budgets, retries, idempotency, tool execution, and final validation.
 
+For a browser-first review of the newer hosted path, use the saved
+[one-minute walkthrough](review/WALKTHROUGH.md). Keep the two demonstrations
+distinct: the CLI proves the MCP/database boundary; the browser app proves hosted
+request handling, identity binding, durable state, evidence reuse and bounded real inference over synthetic data.
+
 ## Recommended Sequence
 
 ### 1. Frame the boundary, 20 seconds
@@ -89,3 +94,17 @@ The report is written to:
 - `artifacts/eval-report.md`
 
 Complete JSON remains available with `npm run demo:mcp` or `--output=json`. Use that for debugging, not the short recording.
+
+## Hosted local walkthrough
+
+Run:
+
+```bash
+npm run dev:cloudflare
+```
+
+Ask why the synthetic `orders` table is slow, refresh, then ask what to check next.
+Point out the explicit local-test-model and synthetic-data labels, the unchanged
+evidence fingerprint after refresh/follow-up, and the absence of a database or SQL
+executor. Do not present this deterministic local response as live-model evidence;
+the separately saved v4 walkthrough records the real Workers AI review.

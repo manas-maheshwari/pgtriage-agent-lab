@@ -1,8 +1,8 @@
 # Publication privacy check — 2026-09-26
 
-Status: review materials prepared locally; **not committed or published in this pass**.
-Inference stayed off at 13/20. No credentials, new permissions or access changes
-were needed to prepare this review package.
+Status: review materials were inspected before publication and are now committed in
+the public repository. Inference stayed off at 13/20. No credentials, new
+permissions or access changes were needed to prepare or publish this review package.
 
 ## Scope and results
 

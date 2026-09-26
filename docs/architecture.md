@@ -4,6 +4,16 @@
 
 The model may propose the next step. Deterministic application code decides whether that step is valid, authorized, affordable, executable, and complete.
 
+The repository now has two adapters around that principle:
+
+- the original CLI/MCP runtime, which can call the Python pgtriage server; and
+- a private Cloudflare review application, which uses a fixed synthetic diagnostic,
+  Workers AI, a Worker, Durable Objects, Access identity, and a small browser UI.
+
+The hosted adapter reuses the domain contracts, policy engine, orchestrator,
+fixture tool and retrieval layer. It does not expose PostgreSQL credentials, SQL
+execution or a remote MCP connection.
+
 ```text
 User / CLI
     |
@@ -59,6 +69,33 @@ Any non-terminal state may transition to:
 
 The state machine is explicit rather than inferred from log messages. Each transition records the previous state, next state, timestamp, workflow ID, attempt number, and bounded metadata.
 
+## Hosted review path
+
+```text
+Browser
+  -> Cloudflare Access JWT verification
+  -> Worker request/body/origin checks
+  -> identity-bound opaque session
+  -> Investigation Durable Object
+       -> persisted turn + request-ID deduplication
+       -> deterministic orchestrator
+       -> Workers AI through shared quota Durable Object
+       -> fixed synthetic diagnostic
+       -> bundled runbook retrieval
+       -> grounded-output validation
+       -> persisted answer and evidence
+  -> safe text rendering in the browser
+```
+
+The first question uses at most two model calls: a typed plan and synthesis. A
+follow-up uses one synthesis call over saved evidence and retrieved passages; it
+does not rerun the diagnostic or pass the prior chat transcript to the model.
+Refresh is a state read, not another inference call.
+
+The shared quota reserves an attempt before the provider boundary and never
+refunds failures. A time-limited configuration gate and durable shutdown latch
+constrain live review. The checked-in staging configuration has inference off.
+
 ## Components and tradeoffs
 
 ### Request boundary
@@ -72,7 +109,9 @@ Responsibilities:
 
 Why it exists: retries can arrive from the CLI, HTTP layer, queue, or user. Deduplication must happen before expensive or side-effecting work.
 
-First-slice limitation: the in-memory store deduplicates only within one process. Durable deduplication arrives with SQLite.
+The CLI supports memory and SQLite stores. The hosted path binds an opaque session
+to a verified owner and uses Durable Object storage for request deduplication and
+turn persistence.
 
 ### Deterministic orchestrator
 
@@ -240,9 +279,16 @@ Tool failures carry an explicit dispatch state. `PreDispatchToolError` means no 
 | `demo:fixture` | deterministic fake | in-process fixture | memory by default | fastest local smoke test |
 | `demo:mcp` | deterministic fake | fixture MCP over stdio | memory by default | protocol-boundary demo |
 | `demo:real` | Anthropic if configured, fake otherwise | configurable real pgtriage command plus structured arguments | memory or SQLite | approved database run |
+| `dev:cloudflare` | deterministic local test model | fixed synthetic diagnostic | SQLite-backed Durable Objects | local browser review of the hosted flow |
+| private staging | Workers AI | fixed synthetic diagnostic | SQLite-backed Durable Objects | authenticated, bounded real-model acceptance review; inference currently disabled |
 
 Set `SQLITE_WORKFLOWS=1` to use the SQLite store from the CLI.
 
 ## Later Evolution
 
-After the narrow slice works, the same orchestrator can add approvals, durable resume commands, provider routing, queues, and a web/API boundary. Those are extensions of tested contracts, not reasons to turn the first version into a broad autonomous system.
+The web/API boundary, Access integration, hosted persistence, Workers AI adapter and
+shared review quota now exist for the synthetic Cloudflare path. Later extensions
+would include a durable queue, explicit approval workflow, automatic retention,
+multi-tenant policy and cost attribution, OpenTelemetry export, and a remotely
+hosted MCP/tool-execution boundary. Those remain extensions of tested contracts,
+not reasons to turn this version into a broad autonomous system.
