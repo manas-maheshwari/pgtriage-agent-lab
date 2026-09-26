@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pgtriage-agent-lab-local",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-09-25",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "MODEL_MODE": "fixture",
+    "LOCAL_ONLY": "true"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "INVESTIGATIONS",
+        "class_name": "Investigation"
+      },
+      {
+        "name": "QUOTA",
+        "class_name": "InferenceQuota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Investigation"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "InferenceQuota"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.md"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "dev": {
+    "ip": "127.0.0.1",
+    "port": 8787
+  },
+  "send_metrics": false
+}

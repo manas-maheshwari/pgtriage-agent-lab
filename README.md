@@ -1,6 +1,127 @@
 # pgtriage Agent Lab
 
-## Working product
+A small Cloudflare application for investigating a **synthetic PostgreSQL incident**
+through chat. It combines Workers AI, a Worker and Durable Objects with the existing
+Agent Lab's typed workflow, retrieval and advisory policy. Model output is untrusted.
+
+**No real database is connected. No SQL is executed. Live inference is currently off.**
+The fictional `orders` snapshot contains scan counters and a live-row estimate;
+it does not establish why a query is slow or justify a database change.
+
+## Review this project without a Cloudflare account
+
+1. Read the [one-minute illustrated walkthrough](docs/review/WALKTHROUGH.md) of the
+   saved real-model investigation. Screenshots and the answer are included in Git.
+2. Inspect the [complete, unedited v4 response](cloudflare/EVIDENCE-REVIEW-2026-09-26.md)
+   and [live test results, including failures and corrections](cloudflare/LIVE-RESULTS.md).
+3. Read the [actual AI-development prompt history](PROMPTS.md), with labeled
+   redactions and assistant summaries. The [runtime prompts](cloudflare/model.ts)
+   are separately versioned as `synthetic-advisor-v4`.
+4. Run the local app below. It needs no Cloudflare account, credentials or model
+   charges; its explicitly labeled test model is deterministic.
+
+![Saved live investigation: synthetic data, inference disabled, observations and unconfirmed hypotheses](docs/review/saved-investigation.jpg)
+
+The GitHub repository is the review entry point. Private staging is restricted to
+one owner and is not required to review the code, screenshots, results or local demo.
+
+## What is synthetic, generated and enforced?
+
+| Part | Responsibility |
+| --- | --- |
+| Synthetic diagnostics | An application-owned fixture supplies 18,250 sequential scans, 41 index scans and a 2,000,000 live-row estimate. These are separate measurements, not scans out of rows. No PostgreSQL query runs. |
+| Real model | Workers AI Llama 3.3 proposes the one allowed diagnostic call, then supplies unconfirmed hypotheses and diagnostic next checks using the current question, saved measurements and retrieved runbook passages. |
+| Application-owned advice | Exact observations come from saved metrics. The application requires a no-change-proposed notice and an explicit rollback evidence-gap notice. These are not free-form model conclusions. |
+| Output enforcement | Zod schemas, advisory policy, exact evidence matching and citation membership checks reject invalid outputs. Targeted guards reject the known ratio/causal claims and post-change advice; they do not prove all natural-language claims true. |
+| Execution and access | Only the synthetic fixture tool is available. No database credentials, SQL executor or change capability exists in the hosted app. The Worker verifies Access identity before UI/API access; session ownership is checked in the Durable Object. Missing auth configuration fails closed. |
+| Usage | One persisted quota reserves before every live model call, including failed attempts; total cap 20, no refunds or automatic retries. Expiring live windows and a durable shutdown latch limit use. Billing alerts are notifications, not enforcement. |
+
+There is no silent fallback from Workers AI to the test model. A provider error or
+invalid answer produces a bounded failure message and retains any saved evidence.
+
+## How the assignment requirements fit
+
+| Requirement | Smallest implementation here | Code |
+| --- | --- | --- |
+| LLM | Workers AI `@cf/meta/llama-3.3-70b-instruct-fp8-fast`; real calls recorded separately from mocks | [Model adapter](cloudflare/model.ts) |
+| Workflow / coordination | Worker serves assets and authenticates requests; one Durable Object per investigation coordinates planning → synthetic diagnostic → retrieval → synthesis | [Worker](cloudflare/worker.ts), [investigation](cloudflare/investigation.ts) |
+| Chat input | Plain HTML/CSS/JavaScript question and answer UI, no frontend framework | [UI](public/app.js) |
+| Memory / state | Durable Object SQLite-backed storage keeps turns, evidence, retrieved passages and workflow checkpoints; a second named object owns the shared live quota | [Store](cloudflare/store.ts), [quota](cloudflare/quota.ts) |
+
+An initial investigation uses at most two model calls and one fixture diagnostic.
+A follow-up uses one model call with the **saved evidence and runbook passages,
+not the prior chat transcript**, and does not rerun diagnostics. Refresh reads stored
+state without inference. This is request-driven coordination, not a separate
+Cloudflare Workflows service or an unattended background-job system.
+
+The Cloudflare adapter reuses Agent Lab's contracts, policy, orchestrator, fixture
+client and retrieval logic. It replaces local SQLite/filesystem/stdio adapters for
+hosting. The original local MCP demo remains available below. The hosted demo
+preserves the diagnostic/advisory flow but does **not** demonstrate a live MCP
+connection, PostgreSQL telemetry collection or remediation execution.
+
+## Run locally (no live inference)
+
+Requires Node.js 22 or newer and npm. From a fresh checkout:
+
+```bash
+git clone https://github.com/manas-maheshwari/pgtriage-agent-lab.git
+cd pgtriage-agent-lab
+npm ci
+npm run dev:cloudflare
+```
+
+Open http://127.0.0.1:8787. Ask “Why is the orders table slow?”, refresh, then ask
+“What should I check next?”. The page explicitly says **LOCAL TEST MODEL**.
+This demonstrates persistence, evidence reuse and rendering; its fixed responses
+are not proof of live LLM reasoning. The [recorded live walkthrough](docs/review/WALKTHROUGH.md)
+is a different, real-model run.
+
+Local state persists under `.wrangler/state/`; use the same browser and hostname.
+The browser holds an opaque HttpOnly session cookie. “New investigation” creates a
+new session without deleting previous records. Enter synthetic questions only.
+The local config has no AI binding, uses local-only host checks and disables
+workers.dev and preview URLs. The separate staging config defaults inference off.
+
+## Validation and live status
+
+```bash
+npm run check:all
+npx playwright install chromium
+npm run test:all           # original Node/MCP + local Workers + browser tests
+npm run demo:mcp:concise  # original stdio MCP fixture demo
+```
+
+Latest completed suite: **78 tests passed** (35 original, 40 Cloudflare, 3 browser),
+plus both type checks. CI runs these offline checks without cloud credentials.
+Storage tests evict/recreate the Durable Object. A counterfactual test changes saved
+counts, removes prior chat and verifies that a follow-up uses the changed evidence.
+Other tests cover ownership, invalid/model-injected output, quota failures and cap,
+shutdown, browser refresh and safe text rendering.
+
+The latest **v4 live run passed one fresh investigation on its first submission**,
+using two calls. It separated observations, unconfirmed hypotheses and next checks,
+without an invented ratio, definite cause, rollback SQL or post-change advice.
+Earlier revisions had three provider failures and an advice-quality error; their
+results remain in the [chronological live record](cloudflare/LIVE-RESULTS.md).
+Earlier live tests also exercised follow-up and failure/recovery; these were not
+repeated in v4's single-investigation review. Broad hypotheses remain a limitation.
+
+Staging is **inference-disabled at 13/20 attempts**, with the durable shutdown latch
+set. Refresh restored the exact saved v4 answer and evidence without another call.
+Workers and Zero Trust remain on Free. No public enable/reset route exists; the two
+explicitly authorized one-use review migrations are consumed. Remaining quota is
+not authorization for another live test. See the [private staging procedure](cloudflare/STAGING.md).
+
+Boundaries: eight turns per investigation; bounded inputs/outputs; a 25-second
+model response deadline cannot cancel inference already accepted by the provider.
+Interrupted turns fail without automatic replay. Citation/evidence checks and text
+guards do not guarantee general root-cause correctness.
+Credentials, Access identity settings, cookies and login material stay outside Git
+and model inputs. See the [publication privacy check](docs/review/PRIVACY-CHECK.md).
+
+## Original local Agent Lab and MCP demo
+
 
 **pgtriage Agent Lab** is a production-shaped TypeScript agent runtime that asks a bounded PostgreSQL diagnostic tool for evidence and returns a structured, advisory-only remediation plan.
 

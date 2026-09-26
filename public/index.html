@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pgtriage · Synthetic incident lab</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header><span class="brand">pgtriage / Agent Lab</span><button id="reset" type="button">New investigation</button></header>
+    <div class="notice"><strong>SYNTHETIC DATA ONLY</strong> · No database connection. No changes can be executed.</div>
+    <h1>Investigate a slow orders table.</h1>
+    <p class="intro">Ask a question, inspect the diagnostic evidence, and review an advisory plan.</p>
+    <p id="mode" class="mode">Loading investigation configuration…</p>
+    <p id="inference-status" class="small" aria-live="polite"></p>
+    <details id="attempt-ledger" hidden><summary>Live attempt outcomes</summary><pre id="attempt-outcomes"></pre></details>
+    <button id="disable-inference" type="button" hidden>Disable live inference for this test</button>
+    <div class="layout">
+      <section aria-label="Investigation chat">
+        <div id="chat" aria-live="polite"></div>
+        <form id="question-form">
+          <label for="question">Your question about this synthetic incident</label>
+          <textarea id="question" required maxlength="2000" rows="3" placeholder="Queries against orders are slow. What should I investigate?"></textarea>
+          <div class="form-footer"><span>Advisory only · human review required</span><button id="send" type="submit">Investigate</button></div>
+        </form>
+        <p id="status" role="status"></p>
+      </section>
+      <aside>
+        <h2>Saved diagnostic evidence</h2>
+        <p>Follow-ups read this stored evidence and its runbook passages directly, independently of the chat transcript.</p>
+        <p id="evidence-status">Evidence will appear after the diagnostic runs.</p>
+        <pre id="evidence"></pre>
+        <p class="small">Refresh this page to restore the investigation. State is stored by the application server; your browser keeps a session cookie.</p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
