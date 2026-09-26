@@ -1,296 +1,182 @@
 # pgtriage Agent Lab
 
-A small Cloudflare application for investigating a **synthetic PostgreSQL incident**
-through chat. It combines Workers AI, a Worker and Durable Objects with the existing
-Agent Lab's typed workflow, retrieval and advisory policy. Model output is untrusted.
+A TypeScript reference runtime for **evidence-based PostgreSQL investigations**.
+Models propose diagnostic steps and advice; application code controls tool access,
+workflow state, retries, and output validation.
 
-**No real database is connected. No SQL is executed. Live inference is currently off.**
-The fictional `orders` snapshot contains scan counters and a live-row estimate;
-it does not establish why a query is slow or justify a database change.
+The problem is not just getting a model to answer a database question. It is knowing
+which evidence the answer used, whether the tool call was authorized, and what to
+do when a request fails after work may already have started.
 
-## Review this project without a Cloudflare account
+Agent Lab is a companion to [pgtriage](https://github.com/pgtriage/pgtriage), the
+Python MCP server that collects database diagnostics. The two projects are
+independently installable: pgtriage owns the audit, while Agent Lab explores the
+orchestration and policy around it.
 
-1. Read the [one-minute illustrated walkthrough](docs/review/WALKTHROUGH.md) of the
-   saved real-model investigation. Screenshots and the answer are included in Git.
-2. Inspect the [complete, unedited v4 response](cloudflare/EVIDENCE-REVIEW-2026-09-26.md)
-   and [live test results, including failures and corrections](cloudflare/LIVE-RESULTS.md).
-3. Read the [actual AI-development prompt history](PROMPTS.md), with labeled
-   redactions and assistant summaries. The [runtime prompts](cloudflare/model.ts)
-   are separately versioned as `synthetic-advisor-v4`.
-4. Run the local app below. It needs no Cloudflare account, credentials or model
-   charges; its explicitly labeled test model is deterministic.
+**Default demos use synthetic data and deterministic test models. No remediation
+is executed.** The optional CLI integration can run real database diagnostics;
+the Cloudflare chat demo cannot connect to a database.
 
-![Saved live investigation: synthetic data, inference disabled, observations and unconfirmed hypotheses](docs/review/saved-investigation.jpg)
+[Illustrated walkthrough](docs/review/WALKTHROUGH.md) ·
+[Architecture](docs/architecture.md) ·
+[Development prompt history](PROMPTS.md) ·
+[Recorded live results](cloudflare/LIVE-RESULTS.md)
 
-The GitHub repository is the review entry point. Private staging is restricted to
-one owner and is not required to review the code, screenshots, results or local demo.
+## Two ways to explore it
 
-## What is synthetic, generated and enforced?
-
-| Part | Responsibility |
-| --- | --- |
-| Synthetic diagnostics | An application-owned fixture supplies 18,250 sequential scans, 41 index scans and a 2,000,000 live-row estimate. These are separate measurements, not scans out of rows. No PostgreSQL query runs. |
-| Real model | Workers AI Llama 3.3 proposes the one allowed diagnostic call, then supplies unconfirmed hypotheses and diagnostic next checks using the current question, saved measurements and retrieved runbook passages. |
-| Application-owned advice | Exact observations come from saved metrics. The application requires a no-change-proposed notice and an explicit rollback evidence-gap notice. These are not free-form model conclusions. |
-| Output enforcement | Zod schemas, advisory policy, exact evidence matching and citation membership checks reject invalid outputs. Targeted guards reject the known ratio/causal claims and post-change advice; they do not prove all natural-language claims true. |
-| Execution and access | Only the synthetic fixture tool is available. No database credentials, SQL executor or change capability exists in the hosted app. The Worker verifies Access identity before UI/API access; session ownership is checked in the Durable Object. Missing auth configuration fails closed. |
-| Usage | One persisted quota reserves before every live model call, including failed attempts; total cap 20, no refunds or automatic retries. Expiring live windows and a durable shutdown latch limit use. Billing alerts are notifications, not enforcement. |
-
-There is no silent fallback from Workers AI to the test model. A provider error or
-invalid answer produces a bounded failure message and retains any saved evidence.
-
-## How the assignment requirements fit
-
-| Requirement | Smallest implementation here | Code |
+| | Local MCP runtime | Cloudflare chat demo |
 | --- | --- | --- |
-| LLM | Workers AI `@cf/meta/llama-3.3-70b-instruct-fp8-fast`; real calls recorded separately from mocks | [Model adapter](cloudflare/model.ts) |
-| Workflow / coordination | Worker serves assets and authenticates requests; one Durable Object per investigation coordinates planning → synthetic diagnostic → retrieval → synthesis | [Worker](cloudflare/worker.ts), [investigation](cloudflare/investigation.ts) |
-| Chat input | Plain HTML/CSS/JavaScript question and answer UI, no frontend framework | [UI](public/app.js) |
-| Memory / state | Durable Object SQLite-backed storage keeps turns, evidence, retrieved passages and workflow checkpoints; a second named object owns the shared live quota | [Store](cloudflare/store.ts), [quota](cloudflare/quota.ts) |
+| Interface | CLI with structured JSON or concise output | Browser chat with saved investigations |
+| Diagnostics | Fixture MCP server by default; optional real pgtriage integration | Fixed synthetic incident, no database connection or live MCP transport |
+| Model | Deterministic test model; optional Anthropic adapter in real-tool mode | Deterministic locally; Workers AI in the recorded hosted tests |
+| State | Memory by default; opt-in SQLite with idempotency and leases | SQLite-backed Durable Objects for investigation state and a shared inference quota |
+| What to inspect | Tool authorization, schema scope, retry classification and workflow transitions | Evidence-based follow-ups, refresh without inference, identity/ownership and bounded model use |
 
-An initial investigation uses at most two model calls and one fixture diagnostic.
-A follow-up uses one model call with the **saved evidence and runbook passages,
-not the prior chat transcript**, and does not rerun diagnostics. Refresh reads stored
-state without inference. This is request-driven coordination, not a separate
-Cloudflare Workflows service or an unattended background-job system.
+Both use the shared TypeScript contracts, policy and orchestration components.
+Their adapters and failure behavior differ; a result from one mode is not evidence
+that the other mode was tested.
 
-The Cloudflare adapter reuses Agent Lab's contracts, policy, orchestrator, fixture
-client and retrieval logic. It replaces local SQLite/filesystem/stdio adapters for
-hosting. The original local MCP demo remains available below. The hosted demo
-preserves the diagnostic/advisory flow but does **not** demonstrate a live MCP
-connection, PostgreSQL telemetry collection or remediation execution.
+## See an investigation
 
-## Run locally (no live inference)
+The [one-minute walkthrough](docs/review/WALKTHROUGH.md) shows an actual saved
+Workers AI response over a **synthetic** PostgreSQL snapshot. No cloud account or
+staging access is needed.
 
-Requires Node.js 22 or newer and npm. From a fresh checkout:
+![Saved chat investigation with synthetic measurements, unconfirmed hypotheses and next checks](docs/review/saved-investigation.jpg)
+
+The application renders observed measurements separately from model-generated
+hypotheses and diagnostic next checks. The snapshot does not establish why a query
+is slow. Exact observations and mandatory safety notices are application-owned,
+not evidence of model reasoning. Refresh restores the saved result rather than
+asking the model to recreate it.
+
+Private staging is not a public interactive demo; live inference is disabled.
+The local demo below is available without credentials.
+
+## Quick start
+
+Requires Node.js 22 or newer and npm.
 
 ```bash
 git clone https://github.com/manas-maheshwari/pgtriage-agent-lab.git
 cd pgtriage-agent-lab
 npm ci
+```
+
+### Local MCP runtime
+
+```bash
+npm run demo:mcp:concise
+```
+
+This starts a fixture MCP server over stdio, runs the bounded audit workflow and
+prints an advisory result. It needs no model API key or PostgreSQL instance.
+Use `npm run demo:fixture:concise` for the equivalent in-process tool demo.
+
+The CLI uses **in-memory storage by default**. To retain workflow state across runs:
+
+```bash
+SQLITE_WORKFLOWS=1 npm run demo:mcp:concise
+```
+
+The SQLite file lives under `runs/`. The demo uses a fixed idempotency key per mode,
+so repeating a completed SQLite-backed demo returns its existing workflow rather
+than running another audit. Persistence and lease primitives are not a guarantee
+of exactly-once external execution or an unattended recovery service.
+
+For explicitly approved database diagnostics, see the
+[real pgtriage integration guide](docs/local-runtime.md). That mode can contact a
+real database even when no model API key is set; do not use it as a synthetic demo.
+
+### Run locally (no live inference)
+
+```bash
 npm run dev:cloudflare
 ```
 
-Open http://127.0.0.1:8787. Ask “Why is the orders table slow?”, refresh, then ask
-“What should I check next?”. The page explicitly says **LOCAL TEST MODEL**.
-This demonstrates persistence, evidence reuse and rendering; its fixed responses
-are not proof of live LLM reasoning. The [recorded live walkthrough](docs/review/WALKTHROUGH.md)
-is a different, real-model run.
+Open http://127.0.0.1:8787. Ask "Why is the orders table slow?", refresh, then ask
+"What should I check next?". The page says **LOCAL TEST MODEL**: its fixed responses
+demonstrate persistence, evidence reuse and rendering, not live LLM reasoning.
 
 Local state persists under `.wrangler/state/`; use the same browser and hostname.
-The browser holds an opaque HttpOnly session cookie. “New investigation” creates a
-new session without deleting previous records. Enter synthetic questions only.
-The local config has no AI binding, uses local-only host checks and disables
-workers.dev and preview URLs. The separate staging config defaults inference off.
+"New investigation" creates another session without deleting earlier records.
+Enter synthetic questions only. This local configuration has no Workers AI binding
+and is not a deployment configuration.
 
-## Validation and live status
+## Engineering decisions worth inspecting
+
+- **Authorization is code, not a prompt.** The planner's proposal must match the
+  allowed tool and caller-supplied schema scope. MCP annotations inform checks;
+  they never grant permission by themselves.
+- **A lost caller does not mean the audit never ran.** The MCP adapter distinguishes
+  proven pre-dispatch failures from ambiguous failures after dispatch. It does not
+  automatically repeat a non-idempotent audit that may still be running.
+- **Saved evidence is not chat memory.** Cloudflare follow-ups use persisted
+  measurements and retrieved runbook passages, not the previous transcript, and
+  do not rerun diagnostics.
+- **Valid JSON is not sufficient.** Typed schemas and advisory policy are followed
+  by evidence and citation checks. The chat adapter adds targeted guards for
+  observed failure cases; these do not establish general factual correctness.
+- **Usage controls precede inference.** Hosted attempts are reserved in a shared
+  persisted quota before dispatch, including failures. A deadline does not promise
+  cancellation of a provider request already accepted.
+
+See [architecture](docs/architecture.md) for the core boundaries and
+[Cloudflare implementation notes](cloudflare/README.md) for the hosted adapter,
+model/application responsibility split and assignment mapping.
+
+## Validation and known limits
 
 ```bash
 npm run check:all
 npx playwright install chromium
-npm run test:all           # original Node/MCP + local Workers + browser tests
-npm run demo:mcp:concise  # original stdio MCP fixture demo
-```
-
-Latest completed suite: **78 tests passed** (35 original, 40 Cloudflare, 3 browser),
-plus both type checks. CI runs these offline checks without cloud credentials.
-Storage tests evict/recreate the Durable Object. A counterfactual test changes saved
-counts, removes prior chat and verifies that a follow-up uses the changed evidence.
-Other tests cover ownership, invalid/model-injected output, quota failures and cap,
-shutdown, browser refresh and safe text rendering.
-
-The latest **v4 live run passed one fresh investigation on its first submission**,
-using two calls. It separated observations, unconfirmed hypotheses and next checks,
-without an invented ratio, definite cause, rollback SQL or post-change advice.
-Earlier revisions had three provider failures and an advice-quality error; their
-results remain in the [chronological live record](cloudflare/LIVE-RESULTS.md).
-Earlier live tests also exercised follow-up and failure/recovery; these were not
-repeated in v4's single-investigation review. Broad hypotheses remain a limitation.
-
-Staging is **inference-disabled at 13/20 attempts**, with the durable shutdown latch
-set. Refresh restored the exact saved v4 answer and evidence without another call.
-Workers and Zero Trust remain on Free. No public enable/reset route exists; the two
-explicitly authorized one-use review migrations are consumed. Remaining quota is
-not authorization for another live test. See the [private staging procedure](cloudflare/STAGING.md).
-
-Boundaries: eight turns per investigation; bounded inputs/outputs; a 25-second
-model response deadline cannot cancel inference already accepted by the provider.
-Interrupted turns fail without automatic replay. Citation/evidence checks and text
-guards do not guarantee general root-cause correctness.
-Credentials, Access identity settings, cookies and login material stay outside Git
-and model inputs. See the [publication privacy check](docs/review/PRIVACY-CHECK.md).
-
-## Original local Agent Lab and MCP demo
-
-
-**pgtriage Agent Lab** is a production-shaped TypeScript agent runtime that asks a bounded PostgreSQL diagnostic tool for evidence and returns a structured, advisory-only remediation plan.
-
-It is a companion reference implementation for [pgtriage](https://github.com/pgtriage/pgtriage), the open-source MCP server that performs the underlying PostgreSQL audit. The two projects remain independently installable: pgtriage owns database diagnostics, while Agent Lab demonstrates orchestration, policy, durable workflow state, retrieval, evaluation, and observability around that tool boundary.
-
-The project intentionally starts with one complete path instead of a broad autonomous agent.
-
-## First vertical slice
-
-Given this request:
-
-> Audit this PostgreSQL database and produce a prioritized remediation plan. Do not execute changes.
-
-the system will:
-
-1. create a workflow with a caller-supplied idempotency key;
-2. bind an optional caller-authorized schema scope to typed request context;
-3. ask a planner for one schema-valid `full_audit` tool call;
-4. verify that the model did not invent, broaden, or replace the schema scope;
-5. authorize the allowlisted tool at execution time from its MCP annotations;
-6. invoke it through an MCP client;
-7. pass the bounded tool result to a synthesizer;
-8. validate the remediation plan against a Zod schema;
-9. enforce an advisory-only output policy;
-10. record correlated state transitions and timing data; and
-11. return the final structured result.
-
-The default implementation uses a deterministic fake model adapter and either a direct fixture tool or a fixture MCP server. That makes the complete workflow testable without an API key or production database. Real mode can swap in the Anthropic SDK and the real pgtriage MCP server without changing the orchestration contract.
-
-## What this slice proves
-
-- TypeScript can own an agent loop while Python owns the domain tool server.
-- Model proposals are untrusted data and must pass schema and policy validation.
-- Planning-time permission does not replace execution-time authorization.
-- MCP annotations inform policy and retry behavior but never grant authorization.
-- A non-idempotent `full_audit` is not automatically repeated after an ambiguous timeout or transport failure.
-- Workflow state, retries, and idempotency belong to deterministic application code.
-- Tool results are evidence, not instructions.
-- A successful model response is not sufficient unless the complete workflow reaches a terminal state.
-
-## What it deliberately does not prove
-
-- a general-purpose autonomous DBA;
-- automatic DDL or DML execution;
-- multi-agent coordination;
-- a polished web interface;
-- Kubernetes deployment;
-- production readiness for arbitrary databases.
-
-It does include a narrow retrieval layer over local runbooks, but that is intentionally small. It proves citation flow and grounding behavior, not internet-scale RAG.
-
-## Run it
-
-```bash
-npm install
-npm run check
-npm test
-npm run demo:fixture
-npm run demo:mcp
-npm run demo:mcp:concise
+npm run test:all
 npm run eval
 ```
 
-`demo:fixture` uses an in-process fake tool. `demo:mcp` starts a local MCP fixture over stdio. Both complete without network access, API keys, or PostgreSQL. Every demo defaults to complete JSON output; append `-- --output=concise` or use a `:concise` script for recording-friendly output.
+The September 26 recorded suite passed **78 tests** (35 core, 40 Cloudflare,
+3 browser) plus both type checks and **26 deterministic evaluation cases**.
+The [evaluation report](artifacts/eval-report.md) measures fixture-based contracts,
+not real-model accuracy. CI runs the automated checks without cloud credentials.
 
-Real pgtriage mode requires explicit environment configuration:
+Tests include execution-time policy checks, storage eviction/recreation,
+ownership isolation, quota/shutdown enforcement, invalid output and safe browser
+rendering. A counterfactual test changes stored scan counts and removes the chat
+transcript, then verifies the follow-up uses the changed evidence.
 
-```bash
-export PGTRIAGE_CONNECTION_STRING="postgresql://..."
-export PGTRIAGE_SCHEMA_NAME="pgtriage_demo"
-export ANTHROPIC_API_KEY="..."
-npm run demo:real:concise
-```
+The [live record](cloudflare/LIVE-RESULTS.md) separately documents real provider
+failures and advice-quality corrections. The final v4 review tested one fresh
+investigation; earlier versions exercised follow-up and recovery. Those paths
+were not all repeated against v4. Its hypotheses remain broad and unconfirmed.
 
-`ANTHROPIC_API_KEY` is optional for `demo:real`; without it the runtime still uses the fake model but calls the real pgtriage MCP server. `PGTRIAGE_CONNECTION_STRING` is required for real tool mode and is never written to traces or output. Real mode defaults to the `pgtriage_demo` schema; set `PGTRIAGE_SCHEMA_NAME` explicitly to change the caller-authorized scope.
+This is a reference implementation, not an autonomous DBA or production-ready
+database service. There is no automatic DDL/DML remediation, multi-agent system,
+or general-purpose SQL execution tool. Real audits can still execute diagnostic
+queries and consume database resources. Retrieval uses a small local runbook
+corpus; citation membership is not proof that a claim is supported. Interrupted
+hosted turns fail without automatic replay, and timeouts cannot guarantee provider
+cancellation. See [milestones](docs/milestones.md) for remaining acceptance gaps and
+the [postmortem](docs/postmortem.md) for design changes after testing.
 
-### Run against a local pgtriage checkout
-
-The child process is configured as a command plus a JSON array of arguments. No shell string is parsed. If the pgtriage checkout has an editable virtual environment, point Agent Lab to it like this:
-
-```bash
-export PGTRIAGE_CONNECTION_STRING="postgresql://..."
-export PGTRIAGE_SCHEMA_NAME="pgtriage_demo"
-export PGTRIAGE_COMMAND="/path/to/pgtriage/.venv/bin/python"
-export PGTRIAGE_ARGS_JSON='["-m", "pgtriage"]'
-export PGTRIAGE_CWD="/path/to/pgtriage"
-npm run demo:real:concise
-```
-
-`PGTRIAGE_ARGS_JSON` must be a JSON array of strings. The child receives only the database connection string and the controlled runtime `PATH`; model credentials and unrelated parent-process variables are not forwarded.
-
-### Schema-scope contract
-
-`schemaName` is optional typed request context. When present, the planner must return the exact same value and the MCP adapter maps it to `schema_name`. When omitted, pgtriage audits all non-system schemas. Agent Lab rejects empty and protected system scopes before tool execution; pgtriage remains responsible for catalog-backed existence validation.
-
-### Retry contract
-
-`full_audit` advertises `readOnlyHint: true`, `destructiveHint: false`, and `idempotentHint: false`. Agent Lab can retry startup or capability discovery when failure is proven to be pre-dispatch. It does not automatically retry an ambiguous timeout or transport failure after `full_audit` may have started. This can require manual operator reconciliation, but it avoids silently repeating bounded `EXPLAIN ANALYZE` work.
-
-## Technology choices
-
-| Area | Choice | Why | Tradeoff |
-|---|---|---|---|
-| Runtime | Node.js 22 + TypeScript | Matches TypeScript-heavy agent platform roles and makes contracts explicit | Less aligned with the existing Python pgtriage implementation, which is useful because it forces a real protocol boundary |
-| Package manager | npm | Already installed and requires no additional tooling | Slower and less strict than pnpm for large monorepos; irrelevant at this size |
-| Model boundary | Small `ModelProvider` interface | Keeps orchestration independent of one vendor and permits deterministic tests | Must avoid inventing an over-general abstraction before a second provider exists |
-| Real model | Anthropic TypeScript SDK | Directly relevant to the role and supports native tool use | Live tests cost money and can be nondeterministic |
-| Tool protocol | Official MCP TypeScript SDK | Exercises a genuine TypeScript-host/Python-server contract | Adds transport and lifecycle complexity compared with a direct function call |
-| Validation | Zod | Runtime validation plus inferred TypeScript types | A valid schema does not prove a recommendation is semantically safe |
-| Tests | Vitest | Fast TypeScript-native unit and integration tests | The test runner does not solve external-service reproducibility by itself |
-| Workflow persistence | Memory and SQLite implementations | Shows idempotency and lease semantics without needing a hosted database | Node's `node:sqlite` API is still experimental |
-| Interface | CLI first | Keeps attention on orchestration, safety, and evaluation | Less visually impressive until a thin UI is added later |
-
-## Repository structure
+## Repository map
 
 ```text
-pgtriage-agent-lab/
-├── README.md
-├── docs/
-│   ├── architecture.md
-│   └── milestones.md
-├── src/
-│   ├── cli.ts
-│   ├── domain/
-│   │   ├── remediation.ts
-│   │   └── workflow.ts
-│   ├── runtime/
-│   │   ├── orchestrator.ts
-│   │   ├── policy.ts
-│   │   └── budgets.ts
-│   ├── ports/
-│   │   ├── model-provider.ts
-│   │   ├── tool-client.ts
-│   │   └── workflow-store.ts
-│   ├── adapters/
-│   │   ├── model/
-│   │   │   ├── fake-model-provider.ts
-│   │   │   └── anthropic-model-provider.ts
-│   │   ├── tools/
-│   │   │   └── mcp-tool-client.ts
-│   │   ├── retrieval/
-│   │   │   └── markdown-corpus-retriever.ts
-│   │   └── persistence/
-│   │       ├── memory-workflow-store.ts
-│   │       └── sqlite-workflow-store.ts
-│   ├── eval/
-│   │   └── run-eval.ts
-│   └── observability/
-│       ├── jsonl-trace-recorder.ts
-│       └── memory-trace-recorder.ts
-├── test/
-│   ├── unit/
-│   └── integration/
-├── corpus/
-└── artifacts/
+src/                  Core contracts, orchestrator, policy, adapters and CLI
+cloudflare/           Worker, investigation/quota Durable Objects, auth and model adapter
+public/               Chat UI assets
+corpus/               Local diagnostic runbooks
+test/                 Core unit and integration tests
+cloudflare/test/      Workers and Durable Object tests
+browser-test/         Browser tests
+artifacts/            Generated deterministic evaluation reports
+docs/                 Architecture, local integration and review walkthrough
+PROMPTS.md            Development prompts, labeled redactions and assistant summaries
+.github/workflows/    CI
 ```
 
-`runs/` and `node_modules/` are generated locally and ignored. Evaluation reports under `artifacts/` are regenerated by `npm run eval` and retained as reviewable evidence.
-
-## Build order
-
-The project follows one rule: **make the deterministic shell correct before making the model more capable.**
-
-1. Contracts and deterministic fixture path: done
-2. Explicit orchestration and policy: done
-3. Real MCP and Anthropic integration: implemented, with live mode gated by env
-4. Persistence and recovery primitives: implemented with SQLite, idempotency, and leases
-5. Narrow evidence retrieval: implemented over local runbooks
-6. Evaluation harness: implemented with generated JSON and Markdown reports
-7. Observability and technical review pack: implemented as docs and JSONL traces
-
-See [architecture.md](docs/architecture.md) for component boundaries and [milestones.md](docs/milestones.md) for acceptance criteria.
+Generated `runs/`, `.wrangler/` state and dependencies stay out of Git.
+Runtime prompts are in the model adapters; [PROMPTS.md](PROMPTS.md) is the
+AI-assisted development record, not the application's system prompt.
+[Privacy review](docs/review/PRIVACY-CHECK.md) and
+[private staging procedure](cloudflare/STAGING.md) document publication and
+operator checks.
