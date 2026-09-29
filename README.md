@@ -1,191 +1,127 @@
 # pgtriage Agent Lab
 
 A TypeScript reference runtime for **evidence-based PostgreSQL investigations**.
-Models propose diagnostic steps and advice; application code controls tool access,
-workflow state, retries, and output validation.
+Models can plan and explain; application code controls authorization, tool
+execution, workflow state, retries, and validation.
 
-The problem is not just getting a model to answer a database question. It is knowing
-which evidence the answer used, whether the tool call was authorized, and what to
-do when a request fails after work may already have started.
+Agent Lab works with [pgtriage](https://github.com/pgtriage/pgtriage), the Python
+MCP server that collects PostgreSQL diagnostics. pgtriage owns the audit. Agent
+Lab demonstrates the production boundaries around an agent that uses it.
 
-Agent Lab is a companion to [pgtriage](https://github.com/pgtriage/pgtriage), the
-Python MCP server that collects database diagnostics. The two projects are
-independently installable: pgtriage owns the audit, while Agent Lab explores the
-orchestration and policy around it.
+> Default demos use synthetic data and deterministic test models. They need no
+> database, cloud account, or model API key, and they never execute remediation.
 
-**Default demos use synthetic data and deterministic test models. No remediation
-is executed.** The optional CLI integration can run real database diagnostics;
-the Cloudflare chat demo cannot connect to a database.
-
-[Illustrated walkthrough](docs/review/WALKTHROUGH.md) ·
+[Walkthrough](docs/review/WALKTHROUGH.md) ·
 [Architecture](docs/architecture.md) ·
-[Jev post-run review](docs/run-review.md) ·
-[Live Jev acceptance](artifacts/run-review-live-result.md) ·
-[Development prompt history](PROMPTS.md) ·
-[Recorded live results](cloudflare/LIVE-RESULTS.md)
+[Integration guide](docs/local-runtime.md) ·
+[Post-run review](docs/run-review.md)
 
-## Two ways to explore it
+## Why this exists
 
-| | Local MCP runtime | Cloudflare chat demo |
-| --- | --- | --- |
-| Interface | CLI with structured JSON or concise output | Browser chat with saved investigations |
-| Diagnostics | Fixture MCP server by default; optional real pgtriage integration | Fixed synthetic incident, no database connection or live MCP transport |
-| Model | Deterministic test model; optional Anthropic adapter in real-tool mode | Deterministic locally; Workers AI in the recorded hosted tests |
-| State | Memory by default; opt-in SQLite with idempotency and leases | SQLite-backed Durable Objects for investigation state and a shared inference quota |
-| What to inspect | Tool authorization, schema scope, retry classification and workflow transitions | Evidence-based follow-ups, refresh without inference, identity/ownership and bounded model use |
+A useful database agent needs more than a good model response:
 
-Both use the shared TypeScript contracts, policy and orchestration components.
-Their adapters and failure behavior differ; a result from one mode is not evidence
-that the other mode was tested.
+```text
+request -> plan -> policy check -> MCP diagnostic -> validation -> saved result
+                                                                   |
+                                                        optional quality review
+```
 
-## See an investigation
+The runtime makes those boundaries explicit. A model can propose actions and
+interpret evidence, but it cannot grant itself access, bypass validation, or
+silently convert an uncertain execution outcome into success.
 
-The [one-minute walkthrough](docs/review/WALKTHROUGH.md) shows an actual saved
-Workers AI response over a **synthetic** PostgreSQL snapshot. No cloud account or
-staging access is needed.
+## Run it in one minute
 
-![Saved chat investigation with synthetic measurements, unconfirmed hypotheses and next checks](docs/review/saved-investigation.jpg)
-
-The application renders observed measurements separately from model-generated
-hypotheses and diagnostic next checks. The snapshot does not establish why a query
-is slow. Exact observations and mandatory safety notices are application-owned,
-not evidence of model reasoning. Refresh restores the saved result rather than
-asking the model to recreate it.
-
-Private staging is not a public interactive demo; live inference is disabled.
-The local demo below is available without credentials.
-
-## Quick start
-
-Requires Node.js 22 or newer and npm.
+Requires Node.js 22 or newer.
 
 ```bash
 git clone https://github.com/manas-maheshwari/pgtriage-agent-lab.git
 cd pgtriage-agent-lab
 npm ci
-```
-
-### Local MCP runtime
-
-```bash
 npm run demo:mcp:concise
 ```
 
-This starts a fixture MCP server over stdio, runs the bounded audit workflow and
-prints an advisory result. It needs no model API key or PostgreSQL instance.
-Use `npm run demo:fixture:concise` for the equivalent in-process tool demo.
+This starts a fixture MCP server over stdio, runs a bounded audit workflow, and
+prints an advisory result using synthetic diagnostics.
 
-The CLI uses **in-memory storage by default**. To retain workflow state across runs:
+## Explore the system
 
-```bash
-SQLITE_WORKFLOWS=1 npm run demo:mcp:concise
-```
+| Experience | Command | What it shows |
+| --- | --- | --- |
+| MCP workflow | `npm run demo:mcp:concise` | Authorization, tool execution, retries, and output validation |
+| In-process workflow | `npm run demo:fixture:concise` | The same orchestration without MCP transport |
+| Local chat UI | `npm run dev:cloudflare` | Saved investigations and evidence-based follow-ups |
+| Post-run review | `npm run demo:review` | Deterministic closure and escalation routing |
+| Real pgtriage | `npm run demo:real:concise` | Explicitly approved diagnostics against a configured database |
 
-The SQLite file lives under `runs/`. The demo uses a fixed idempotency key per mode,
-so repeating a completed SQLite-backed demo returns its existing workflow rather
-than running another audit. Persistence and lease primitives are not a guarantee
-of exactly-once external execution or an unattended recovery service.
+Read the [integration guide](docs/local-runtime.md) before using the real pgtriage
+mode. It can contact a real database even without a model API key.
 
-For explicitly approved database diagnostics, see the
-[real pgtriage integration guide](docs/local-runtime.md). That mode can contact a
-real database even when no model API key is set; do not use it as a synthetic demo.
+The local chat UI runs at `http://127.0.0.1:8787` with a fixed test model and a
+synthetic incident. It demonstrates state and evidence handling, not live model
+quality.
 
-### Run locally (no live inference)
+## What is enforced in code
 
-```bash
-npm run dev:cloudflare
-```
+- **Authorization:** proposed tools and schema scope must satisfy explicit policy.
+- **Retry safety:** ambiguous post-dispatch failures are not replayed blindly.
+- **Evidence checks:** valid JSON must still pass citation and advisory validation.
+- **Bounded inference:** hosted attempts reserve persisted quota before dispatch.
+- **Safe review:** Jev can assess quality and urgency, but deterministic rules own
+  the final route and fail closed to human review.
 
-Open http://127.0.0.1:8787. Ask "Why is the orders table slow?", refresh, then ask
-"What should I check next?". The page says **LOCAL TEST MODEL**: its fixed responses
-demonstrate persistence, evidence reuse and rendering, not live LLM reasoning.
+The Jev integration is documented with a
+[design note](docs/run-review.md),
+[deterministic evaluation](artifacts/run-review-eval-report.md), and
+[recorded live API check](artifacts/run-review-live-result.md).
 
-Local state persists under `.wrangler/state/`; use the same browser and hostname.
-"New investigation" creates another session without deleting earlier records.
-Enter synthetic questions only. This local configuration has no Workers AI binding
-and is not a deployment configuration.
+## Verification
 
-## Engineering decisions worth inspecting
+The recorded September 28 suite passed:
 
-- **Authorization is code, not a prompt.** The planner's proposal must match the
-  allowed tool and caller-supplied schema scope. MCP annotations inform checks;
-  they never grant permission by themselves.
-- **A lost caller does not mean the audit never ran.** The MCP adapter distinguishes
-  proven pre-dispatch failures from ambiguous failures after dispatch. It does not
-  automatically repeat a non-idempotent audit that may still be running.
-- **Saved evidence is not chat memory.** Cloudflare follow-ups use persisted
-  measurements and retrieved runbook passages, not the previous transcript, and
-  do not rerun diagnostics.
-- **Valid JSON is not sufficient.** Typed schemas and advisory policy are followed
-  by evidence and citation checks. The chat adapter adds targeted guards for
-  observed failure cases; these do not establish general factual correctness.
-- **Usage controls precede inference.** Hosted attempts are reserved in a shared
-  persisted quota before dispatch, including failures. A deadline does not promise
-  cancellation of a provider request already accepted.
-- **Probabilistic review cannot weaken deterministic policy.** An optional Jev
-  adapter evaluates completed run summaries for quality and triage. Ambiguous tool
-  outcomes, malformed completed records and explicit human-review flags remain
-  application-owned invariants. Provider failure routes to human review.
+| Check | Result |
+| --- | ---: |
+| Automated tests | 89 |
+| TypeScript checks | 2 |
+| Workflow evaluation cases | 26 |
+| Post-run routing cases | 7 |
 
-See [architecture](docs/architecture.md) for the core boundaries and
-[Cloudflare implementation notes](cloudflare/README.md) for the hosted adapter,
-model/application responsibility split and assignment mapping.
-
-## Validation and known limits
+<details>
+<summary>Run the full validation suite</summary>
 
 ```bash
 npm run check:all
 npx playwright install chromium
 npm run test:all
 npm run eval
-npm run demo:review
 npm run eval:review
 ```
 
-The September 28 recorded suite passed **89 tests** (46 core, 40 Cloudflare,
-3 browser) plus both type checks, **26 deterministic workflow evaluation cases**
-and **7 deterministic post-run routing cases**.
-The [evaluation report](artifacts/eval-report.md) measures fixture-based contracts,
-not real-model accuracy. CI runs the automated checks without cloud credentials.
+</details>
 
-Tests include execution-time policy checks, storage eviction/recreation,
-ownership isolation, quota/shutdown enforcement, invalid output and safe browser
-rendering. A counterfactual test changes stored scan counts and removes the chat
-transcript, then verifies the follow-up uses the changed evidence.
+These are fixture-based contract and recorded integration results, not a general
+model-accuracy study. CI runs without cloud credentials.
 
-The [live record](cloudflare/LIVE-RESULTS.md) separately documents real provider
-failures and advice-quality corrections. The final v4 review tested one fresh
-investigation; earlier versions exercised follow-up and recovery. Those paths
-were not all repeated against v4. Its hypotheses remain broad and unconfirmed.
+## Current limits
 
 This is a reference implementation, not an autonomous DBA or production-ready
-database service. There is no automatic DDL/DML remediation, multi-agent system,
-or general-purpose SQL execution tool. Real audits can still execute diagnostic
-queries and consume database resources. Retrieval uses a small local runbook
-corpus; citation membership is not proof that a claim is supported. Interrupted
-hosted turns fail without automatic replay, and timeouts cannot guarantee provider
-cancellation. See [milestones](docs/milestones.md) for remaining acceptance gaps and
-the [postmortem](docs/postmortem.md) for design changes after testing.
+database service. It has no automatic DDL/DML remediation or general-purpose SQL
+tool. Real diagnostics can still consume database resources, and a citation's
+presence alone does not prove that every claim is supported.
 
-## Repository map
+See [milestones](docs/milestones.md) and the [postmortem](docs/postmortem.md) for
+remaining gaps and the design changes that followed testing.
 
-```text
-src/                  Core contracts, orchestrator, policy, adapters and CLI
-cloudflare/           Worker, investigation/quota Durable Objects, auth and model adapter
-public/               Chat UI assets
-corpus/               Local diagnostic runbooks
-test/                 Core unit and integration tests
-cloudflare/test/      Workers and Durable Object tests
-browser-test/         Browser tests
-artifacts/            Generated deterministic evaluation reports
-docs/                 Architecture, local integration and review walkthrough
-PROMPTS.md            Development prompts, labeled redactions and assistant summaries
-.github/workflows/    CI
-```
+## Documentation
 
-Generated `runs/`, `.wrangler/` state and dependencies stay out of Git.
-Runtime prompts are in the model adapters; [PROMPTS.md](PROMPTS.md) is the
-AI-assisted development record, not the application's system prompt.
-[Privacy review](docs/review/PRIVACY-CHECK.md) and
-[private staging procedure](cloudflare/STAGING.md) document publication and
-operator checks.
+| Document | Start here when you want to... |
+| --- | --- |
+| [Walkthrough](docs/review/WALKTHROUGH.md) | See a saved investigation |
+| [Architecture](docs/architecture.md) | Understand components and trust boundaries |
+| [Local integration](docs/local-runtime.md) | Connect Agent Lab to pgtriage |
+| [Post-run review](docs/run-review.md) | Understand the Jev routing layer |
+| [Cloudflare notes](cloudflare/README.md) | Inspect the hosted chat implementation |
+| [Privacy review](docs/review/PRIVACY-CHECK.md) | Review publication and data-handling checks |
+
+The repository also retains [recorded hosted-model results](cloudflare/LIVE-RESULTS.md)
+and an auditable [development prompt history](PROMPTS.md).
