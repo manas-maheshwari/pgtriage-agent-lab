@@ -45,7 +45,19 @@ Deterministic orchestrator ----------------------+
     +--> WorkflowStore <--------------------------+
     |
     +--> TraceRecorder
+    |
+    +--> Post-run reviewer (terminal workflows only)
+           - deterministic invariant checks
+           - bounded Jev assessment
+           - deterministic route thresholds
 ```
+
+The post-run reviewer is downstream of execution. It cannot authorize tools or
+change workflow state. It receives counts, categories, state transitions and error
+classification, but no caller identity, credentials, raw database evidence or
+generated summary text. Ambiguous dispatch and malformed completion are resolved
+by code before the optional provider boundary. Provider failure routes to human
+review. See [post-run review](run-review.md).
 
 ## Request lifecycle
 
@@ -204,6 +216,20 @@ The trace must answer:
 - How long did each step take?
 - Was work retried or deduplicated?
 - Why did the workflow stop?
+
+### Post-run reviewer
+
+The optional reviewer classifies terminal runs into `AUTO_CLOSE`, `HUMAN_REVIEW`,
+`PRIORITY_REVIEW`, or `FILE_ISSUE`. A `RunReviewer` port separates the routing
+policy from the Jev HTTP adapter, so CI uses deterministic assessments.
+
+The adapter asks five typed questions in one System One request. Code validates the
+response and applies thresholds. An explicit `requiresHumanReview` finding cannot
+be removed by the model, and ambiguous execution outcomes bypass the model entirely.
+
+Tradeoff: excluding raw evidence reduces privacy risk and prompt size, but it also
+limits what Jev can judge. This slice evaluates trace/output shape and operational
+triage, not the truth of PostgreSQL-specific claims.
 
 ## Core contracts
 

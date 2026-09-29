@@ -19,6 +19,8 @@ the Cloudflare chat demo cannot connect to a database.
 
 [Illustrated walkthrough](docs/review/WALKTHROUGH.md) ·
 [Architecture](docs/architecture.md) ·
+[Jev post-run review](docs/run-review.md) ·
+[Live Jev acceptance](artifacts/run-review-live-result.md) ·
 [Development prompt history](PROMPTS.md) ·
 [Recorded live results](cloudflare/LIVE-RESULTS.md)
 
@@ -120,6 +122,10 @@ and is not a deployment configuration.
 - **Usage controls precede inference.** Hosted attempts are reserved in a shared
   persisted quota before dispatch, including failures. A deadline does not promise
   cancellation of a provider request already accepted.
+- **Probabilistic review cannot weaken deterministic policy.** An optional Jev
+  adapter evaluates completed run summaries for quality and triage. Ambiguous tool
+  outcomes, malformed completed records and explicit human-review flags remain
+  application-owned invariants. Provider failure routes to human review.
 
 See [architecture](docs/architecture.md) for the core boundaries and
 [Cloudflare implementation notes](cloudflare/README.md) for the hosted adapter,
@@ -132,10 +138,13 @@ npm run check:all
 npx playwright install chromium
 npm run test:all
 npm run eval
+npm run demo:review
+npm run eval:review
 ```
 
-The September 26 recorded suite passed **78 tests** (35 core, 40 Cloudflare,
-3 browser) plus both type checks and **26 deterministic evaluation cases**.
+The September 28 recorded suite passed **89 tests** (46 core, 40 Cloudflare,
+3 browser) plus both type checks, **26 deterministic workflow evaluation cases**
+and **7 deterministic post-run routing cases**.
 The [evaluation report](artifacts/eval-report.md) measures fixture-based contracts,
 not real-model accuracy. CI runs the automated checks without cloud credentials.
 

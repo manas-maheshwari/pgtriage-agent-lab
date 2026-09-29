@@ -203,9 +203,35 @@ Acceptance criteria:
 - [x] Provider errors and invalid output produce a bounded failure with no silent model fallback.
 - [x] Attempt quota is reserved before inference, survives failures, and can be durably shut down.
 - [x] Synthetic evidence is separated from unconfirmed hypotheses and diagnostic next checks.
-- [x] Local suites pass 35 original, 40 Cloudflare and 3 browser tests; the 26 deterministic eval cases also pass.
+- [x] The September 26 baseline passed 35 core, 40 Cloudflare and 3 browser tests; the 26 deterministic workflow eval cases also passed.
 - [x] One private real-model run and its limitations are preserved as review artifacts.
 - [x] Checked-in staging configuration has inference disabled and contains no private identity or credential values.
+
+## Milestone 8: Probabilistic post-run triage
+
+**Goal:** Add a narrow System One decision layer for terminal-run quality and queue
+routing without allowing a model to weaken execution policy.
+
+Deliverables:
+
+- bounded, identity-free review-state contract;
+- `RunReviewer` port with deterministic fake and Jev adapters;
+- deterministic hard rules and confidence thresholds;
+- four operational routes with explicit reason codes;
+- credential-free demo, live opt-in demo and fixture evaluation report;
+- implementation and privacy documentation.
+
+Acceptance criteria:
+
+- [x] Ambiguous execution and malformed completion bypass the provider.
+- [x] Caller identity, credentials, raw evidence and generated summary text are excluded.
+- [x] Jev responses are validated against typed answer contracts.
+- [x] Low-confidence auto-close output is escalated to human review.
+- [x] Explicit finding-level human review cannot be removed by the model.
+- [x] Provider error, timeout or invalid output fails toward human review.
+- [x] Seven deterministic routing cases pass with zero unsafe fixture false negatives.
+- [x] One sanitized live Jev acceptance call is recorded against a synthetic run.
+- [ ] A labeled live corpus measures route accuracy, calibration, latency and cost.
 
 ## Working discipline
 

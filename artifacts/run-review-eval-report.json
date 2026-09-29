@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-09-29T04:42:39.118Z",
+  "passed": 7,
+  "total": 7,
+  "routeAccuracy": 1,
+  "unsafeFalseNegativeRate": 0,
+  "results": [
+    {
+      "id": "supported-completion",
+      "expectedRoute": "AUTO_CLOSE",
+      "actualRoute": "AUTO_CLOSE",
+      "source": "probabilistic",
+      "providerCalls": 1,
+      "passed": true
+    },
+    {
+      "id": "low-confidence-completion",
+      "expectedRoute": "HUMAN_REVIEW",
+      "actualRoute": "HUMAN_REVIEW",
+      "source": "probabilistic",
+      "providerCalls": 1,
+      "passed": true
+    },
+    {
+      "id": "high-urgency-completion",
+      "expectedRoute": "PRIORITY_REVIEW",
+      "actualRoute": "PRIORITY_REVIEW",
+      "source": "probabilistic",
+      "providerCalls": 1,
+      "passed": true
+    },
+    {
+      "id": "provider-failure",
+      "expectedRoute": "HUMAN_REVIEW",
+      "actualRoute": "HUMAN_REVIEW",
+      "source": "fallback",
+      "providerCalls": 1,
+      "passed": true
+    },
+    {
+      "id": "ambiguous-execution",
+      "expectedRoute": "PRIORITY_REVIEW",
+      "actualRoute": "PRIORITY_REVIEW",
+      "source": "deterministic",
+      "providerCalls": 0,
+      "passed": true
+    },
+    {
+      "id": "expected-policy-denial",
+      "expectedRoute": "AUTO_CLOSE",
+      "actualRoute": "AUTO_CLOSE",
+      "source": "deterministic",
+      "providerCalls": 0,
+      "passed": true
+    },
+    {
+      "id": "completed-without-output",
+      "expectedRoute": "FILE_ISSUE",
+      "actualRoute": "FILE_ISSUE",
+      "source": "deterministic",
+      "providerCalls": 0,
+      "passed": true
+    }
+  ]
+}

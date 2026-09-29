@@ -44,3 +44,17 @@ README links and media are included, and repeat the scan if files change. Never
 force-add ignored credentials, state, traces, account exports or browser recordings.
 The saved screenshots and Markdown walkthrough are the only capture assets prepared
 for publication; raw browser/network/session exports are not part of the package.
+
+## September 28 post-run reviewer addendum
+
+The Jev integration adds one outbound request containing terminal workflow state,
+transition names, error classification, aggregate trace counts, finding categories,
+severity labels and citation counts. It excludes caller identity, credentials, raw
+database evidence, request text and generated summary text. `TYPESAFE_API_KEY` is
+read from the process environment only; `.env` patterns remain ignored.
+
+The new source, tests, docs and generated evaluation reports were scanned for Adobe
+naming, embedded bearer tokens and assigned API-key values. None were found. The
+repository contains a sanitized summary of one synthetic live response, but no API
+key, console screenshot, caller identity or raw provider payload. Repeat the full
+staged-diff and history scan before any future push.
