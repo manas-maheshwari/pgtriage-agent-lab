@@ -67,8 +67,9 @@ quality.
 - **Retry safety:** ambiguous post-dispatch failures are not replayed blindly.
 - **Evidence checks:** valid JSON must still pass citation and advisory validation.
 - **Bounded inference:** hosted attempts reserve persisted quota before dispatch.
-- **Safe review:** Jev can assess quality and urgency, but deterministic rules own
-  the final route and fail closed to human review.
+- **Operational review:** an optional TypeSafe Jev assessment classifies terminal
+  runs from bounded metadata. Deterministic rules own the final route, and
+  uncertainty or provider failure falls back to human review.
 
 The Jev integration is documented with a
 [design note](docs/run-review.md),
