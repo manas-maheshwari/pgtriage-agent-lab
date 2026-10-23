@@ -84,7 +84,7 @@ The recorded October 23 suite passed:
 
 | Check | Result |
 | --- | ---: |
-| Automated tests | 100 |
+| Automated tests | 101 |
 | TypeScript checks | 2 |
 | Workflow evaluation cases | 26 |
 | Post-run routing cases | 7 |
