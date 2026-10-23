@@ -7,6 +7,12 @@ export {
   type PgTriageFinding,
 } from "./evidence.js";
 export {
+  ActiveHarnessConfigurationSchema,
+  HarnessConfigurationSchema,
+  type ActiveHarnessConfiguration,
+  type HarnessConfiguration,
+} from "./harness-experiment.js";
+export {
   AuditRequestSchema,
   CallerContextSchema,
   SchemaNameSchema,

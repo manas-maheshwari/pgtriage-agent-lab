@@ -273,14 +273,14 @@ Deliverables:
 
 Acceptance criteria:
 
-- [ ] The first experiment varies exactly one approved harness surface.
-- [ ] Baseline and candidates run the same versioned scenarios.
-- [ ] Authorization, state, retry, tool, and output-policy code is immutable to
+- [x] The first experiment varies exactly one approved harness surface.
+- [x] Baseline and candidates run the same versioned scenarios.
+- [x] Authorization, state, retry, tool, and output-policy code is immutable to
   the experiment.
-- [ ] Any deterministic safety regression disqualifies a candidate regardless
+- [x] Any deterministic safety regression disqualifies a candidate regardless
   of task-quality gains.
-- [ ] No candidate is adopted without explicit human approval.
-- [ ] The report distinguishes same-task improvement from generalization to
+- [x] No candidate is adopted without explicit human approval.
+- [x] The report distinguishes same-task improvement from generalization to
   unseen scenarios.
 
 See the [research-driven engineering program](research-program.md) for intake,

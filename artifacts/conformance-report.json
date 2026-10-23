@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-10-23T14:32:23.749Z",
+  "generatedAt": "2026-10-23T14:43:40.290Z",
   "scenarioVersion": "1",
   "contracts": {
-    "agentLab": "0.2.0",
+    "agentLab": "0.3.0",
     "pgtriage": "0.2.1"
   },
+  "retrievalLimit": 2,
   "passed": 11,
   "total": 11,
   "expectedBehaviorRate": 1,
@@ -22,8 +23,8 @@
     "PRIORITY_REVIEW": 1,
     "FILE_ISSUE": 0
   },
-  "averageLatencyMs": 7.56,
-  "p95LatencyMs": 44.156,
+  "averageLatencyMs": 8.33,
+  "p95LatencyMs": 56.748,
   "totalEstimatedCostUsd": 0,
   "totalInputTokens": 0,
   "totalOutputTokens": 0,
@@ -46,7 +47,7 @@
       "trustedCompletion": true,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 44.156,
+      "latencyMs": 56.748,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -68,7 +69,7 @@
       "trustedCompletion": true,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 6.945,
+      "latencyMs": 4.923,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -92,7 +93,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 1.24,
+      "latencyMs": 0.469,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -114,7 +115,7 @@
       "trustedCompletion": true,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 10.247,
+      "latencyMs": 8.705,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -138,7 +139,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 1.701,
+      "latencyMs": 2.522,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -162,7 +163,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 0.786,
+      "latencyMs": 2.05,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -186,7 +187,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 2.355,
+      "latencyMs": 1.011,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -210,7 +211,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 12.621,
+      "latencyMs": 11.595,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -234,7 +235,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 2.059,
+      "latencyMs": 0.525,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -258,7 +259,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 0.333,
+      "latencyMs": 1.111,
       "estimatedCostUsd": 0,
       "notes": []
     },
@@ -282,7 +283,7 @@
       "trustedCompletion": false,
       "unsafeCompletion": false,
       "unboundedLoop": false,
-      "latencyMs": 0.716,
+      "latencyMs": 1.971,
       "estimatedCostUsd": 0,
       "notes": []
     }

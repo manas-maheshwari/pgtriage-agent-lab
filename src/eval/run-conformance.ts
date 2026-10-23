@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { FakeModelProvider, type FakeModelOptions } from "../adapters/model/fake-model-provider.js";
 import { MemoryWorkflowStore } from "../adapters/persistence/memory-workflow-store.js";
@@ -22,7 +23,7 @@ import { RunReviewService } from "../runtime/run-review.js";
 
 const rootDir = resolve(import.meta.dirname, "../..");
 const SCENARIO_VERSION = "1";
-const AGENT_LAB_CONTRACT_VERSION = "0.2.0";
+const AGENT_LAB_CONTRACT_VERSION = "0.3.0";
 const PGTRIAGE_CONTRACT_VERSION = "0.2.1";
 
 interface ConformanceCase {
@@ -41,7 +42,7 @@ interface ConformanceCase {
   };
 }
 
-interface ConformanceResult {
+export interface ConformanceResult {
   id: string;
   name: string;
   passed: boolean;
@@ -66,10 +67,44 @@ interface ConformanceResult {
   notes: string[];
 }
 
-async function main(): Promise<void> {
+export interface ConformanceReport {
+  generatedAt: string;
+  scenarioVersion: string;
+  contracts: { agentLab: string; pgtriage: string };
+  retrievalLimit: number;
+  passed: number;
+  total: number;
+  expectedBehaviorRate: number;
+  completionRate: number;
+  refusalRate: number;
+  evidenceValidityRate: number | null;
+  citationValidityRate: number | null;
+  unsafeCompletionCount: number;
+  unboundedLoopCount: number;
+  totalDispatches: number;
+  totalRetries: number;
+  reviewRoutes: Record<RunReviewRoute, number>;
+  averageLatencyMs: number;
+  p95LatencyMs: number;
+  totalEstimatedCostUsd: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  results: ConformanceResult[];
+}
+
+export interface ConformanceRunOptions {
+  retrievalLimit?: number;
+  writeArtifacts?: boolean;
+  artifactStem?: string;
+}
+
+export async function runConformanceSuite(
+  options: ConformanceRunOptions = {},
+): Promise<ConformanceReport> {
+  const retrievalLimit = options.retrievalLimit ?? 2;
   const results: ConformanceResult[] = [];
   for (const testCase of buildCases()) {
-    results.push(await runCase(testCase));
+    results.push(await runCase(testCase, retrievalLimit));
   }
 
   const passed = results.filter((result) => result.passed).length;
@@ -86,13 +121,14 @@ async function main(): Promise<void> {
   const sortedLatencies = results
     .map((result) => result.latencyMs)
     .sort((left, right) => left - right);
-  const report = {
+  const report: ConformanceReport = {
     generatedAt: new Date().toISOString(),
     scenarioVersion: SCENARIO_VERSION,
     contracts: {
       agentLab: AGENT_LAB_CONTRACT_VERSION,
       pgtriage: PGTRIAGE_CONTRACT_VERSION,
     },
+    retrievalLimit,
     passed,
     total: results.length,
     expectedBehaviorRate: Number((passed / results.length).toFixed(4)),
@@ -138,22 +174,33 @@ async function main(): Promise<void> {
     results,
   };
 
-  await mkdir(resolve(rootDir, "artifacts"), { recursive: true });
-  await writeFile(
-    resolve(rootDir, "artifacts/conformance-report.json"),
-    `${JSON.stringify(report, null, 2)}\n`,
-    "utf8",
-  );
-  await writeFile(
-    resolve(rootDir, "artifacts/conformance-report.md"),
-    markdownReport(report),
-    "utf8",
-  );
-  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-  if (passed !== results.length) process.exitCode = 1;
+  if (options.writeArtifacts ?? false) {
+    const artifactStem = options.artifactStem ?? "conformance-report";
+    await mkdir(resolve(rootDir, "artifacts"), { recursive: true });
+    await writeFile(
+      resolve(rootDir, `artifacts/${artifactStem}.json`),
+      `${JSON.stringify(report, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(
+      resolve(rootDir, `artifacts/${artifactStem}.md`),
+      markdownReport(report),
+      "utf8",
+    );
+  }
+  return report;
 }
 
-async function runCase(testCase: ConformanceCase): Promise<ConformanceResult> {
+async function main(): Promise<void> {
+  const report = await runConformanceSuite({ writeArtifacts: true });
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  if (report.passed !== report.total) process.exitCode = 1;
+}
+
+async function runCase(
+  testCase: ConformanceCase,
+  retrievalLimit: number,
+): Promise<ConformanceResult> {
   const model = new FakeModelProvider(testCase.model);
   const tools = new FixtureToolClient(testCase.tool);
   const store = new MemoryWorkflowStore();
@@ -164,6 +211,7 @@ async function runCase(testCase: ConformanceCase): Promise<ConformanceResult> {
     store,
     traces,
     retriever: new MarkdownCorpusRetriever(resolve(rootDir, "corpus")),
+    retrievalLimit,
     budget: {
       maxModelCalls: 3,
       maxToolCalls: 2,
@@ -483,29 +531,7 @@ function request(
   };
 }
 
-function markdownReport(report: {
-  generatedAt: string;
-  scenarioVersion: string;
-  contracts: { agentLab: string; pgtriage: string };
-  passed: number;
-  total: number;
-  expectedBehaviorRate: number;
-  completionRate: number;
-  refusalRate: number;
-  evidenceValidityRate: number | null;
-  citationValidityRate: number | null;
-  unsafeCompletionCount: number;
-  unboundedLoopCount: number;
-  totalDispatches: number;
-  totalRetries: number;
-  reviewRoutes: Record<RunReviewRoute, number>;
-  averageLatencyMs: number;
-  p95LatencyMs: number;
-  totalEstimatedCostUsd: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  results: ConformanceResult[];
-}): string {
+function markdownReport(report: ConformanceReport): string {
   const rows = report.results
     .map(
       (result) =>
@@ -520,6 +546,7 @@ Generated: ${report.generatedAt}
 - Scenario contract: ${report.scenarioVersion}
 - Agent Lab contract: ${report.contracts.agentLab}
 - pgtriage contract: ${report.contracts.pgtriage}
+- Retrieval limit per finding: ${report.retrievalLimit}
 - Passed: ${report.passed}/${report.total}
 - Expected-behavior rate: ${report.expectedBehaviorRate}
 - Completion rate: ${report.completionRate}
@@ -549,4 +576,7 @@ ${rows}
 `;
 }
 
-await main();
+const entryPoint = process.argv[1];
+if (entryPoint && import.meta.url === pathToFileURL(entryPoint).href) {
+  await main();
+}

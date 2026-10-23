@@ -47,5 +47,8 @@ jobs:
       - name: Run cross-repository conformance suite
         run: npm run eval:conformance
 
+      - name: Run controlled harness experiment
+        run: npm run experiment:harness
+
       - name: Smoke-test MCP fixture
         run: npm run demo:mcp:concise

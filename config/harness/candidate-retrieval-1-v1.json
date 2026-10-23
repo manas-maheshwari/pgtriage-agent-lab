@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "id": "candidate-retrieval-1-v1",
+  "surface": "retrieval_limit",
+  "retrievalLimit": 1,
+  "description": "Bounded candidate: retrieve at most one chunk per finding."
+}

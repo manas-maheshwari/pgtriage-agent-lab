@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "id": "baseline-retrieval-2-v1",
+  "surface": "retrieval_limit",
+  "retrievalLimit": 2,
+  "description": "Current production-shaped default: retrieve at most two chunks per finding."
+}
