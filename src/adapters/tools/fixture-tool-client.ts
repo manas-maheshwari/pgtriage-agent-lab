@@ -56,6 +56,8 @@ export interface FixtureToolOptions {
   destructiveHint?: boolean;
   idempotentHint?: boolean;
   evidence?: AuditEvidence;
+  rawEvidence?: unknown;
+  contractMismatch?: boolean;
 }
 
 export class FixtureToolClient implements ToolClient {
@@ -86,7 +88,9 @@ export class FixtureToolClient implements ToolClient {
           type: "object",
           properties: {
             slow_query_limit: { type: "integer", minimum: 1, maximum: 50 },
-            schema_name: { type: "string" },
+            ...(this.options.contractMismatch
+              ? {}
+              : { schema_name: { type: "string" } }),
           },
         },
         ...(readOnlyHint === undefined ? {} : { readOnlyHint }),
@@ -153,7 +157,10 @@ export class FixtureToolClient implements ToolClient {
       });
     }
 
-    return structuredClone(this.options.evidence ?? FIXTURE_EVIDENCE);
+    const evidence = Object.hasOwn(this.options, "rawEvidence")
+      ? this.options.rawEvidence
+      : (this.options.evidence ?? FIXTURE_EVIDENCE);
+    return structuredClone(evidence as AuditEvidence);
   }
 
   async close(): Promise<void> {}

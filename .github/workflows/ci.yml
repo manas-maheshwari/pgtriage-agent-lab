@@ -44,5 +44,8 @@ jobs:
       - name: Run evaluation suite
         run: npm run eval
 
+      - name: Run cross-repository conformance suite
+        run: npm run eval:conformance
+
       - name: Smoke-test MCP fixture
         run: npm run demo:mcp:concise

@@ -1,6 +1,6 @@
 {
   "name": "pgtriage-agent-lab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A production-shaped TypeScript agent runtime for pgtriage with deterministic policy, durable workflows, retrieval, and evaluation.",
   "private": true,
   "license": "MIT",
@@ -34,6 +34,7 @@
     "demo:review": "tsx src/demo/run-review.ts",
     "demo:review:live": "node --env-file=.env --import tsx src/demo/run-review.ts --live",
     "eval": "tsx src/eval/run-eval.ts",
+    "eval:conformance": "tsx src/eval/run-conformance.ts",
     "eval:review": "tsx src/eval/run-review-eval.ts",
     "dev:cloudflare": "wrangler dev --local --ip 127.0.0.1 --persist-to .wrangler/state",
     "check:cloudflare": "tsc --noEmit -p cloudflare/tsconfig.json",

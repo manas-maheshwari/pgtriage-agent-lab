@@ -113,7 +113,16 @@ export class McpToolClient implements ToolClient {
       }
       payload = JSON.parse(text.text) as unknown;
     }
-    return AuditEvidenceSchema.parse(payload);
+    const parsed = AuditEvidenceSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new AgentRuntimeError(
+        "MCP_INVALID_RESULT",
+        "The MCP result failed structural or summary-consistency validation.",
+        false,
+        { cause: parsed.error },
+      );
+    }
+    return parsed.data;
   }
 
   async close(): Promise<void> {

@@ -71,6 +71,22 @@ export class PolicyEngine {
       );
     }
 
+    const properties = isRecord(tool.inputSchema.properties)
+      ? tool.inputSchema.properties
+      : undefined;
+    if (
+      tool.inputSchema.type !== "object" ||
+      !properties ||
+      !isRecord(properties.slow_query_limit) ||
+      !isRecord(properties.schema_name)
+    ) {
+      throw new AgentRuntimeError(
+        "TOOL_CONTRACT_MISMATCH",
+        "The discovered full_audit input schema is incompatible with the runtime contract.",
+        false,
+      );
+    }
+
     return tool;
   }
 
@@ -113,4 +129,8 @@ export class PolicyEngine {
       }
     }
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -248,14 +248,14 @@ Deliverables:
 
 Acceptance criteria:
 
-- [ ] Every scenario records tool dispatch count and final workflow state.
-- [ ] Ambiguous post-dispatch failure never causes an unapproved replay.
-- [ ] Scope substitution and remediation requests execute no tool.
-- [ ] Malformed, contradictory, and injected evidence cannot produce a trusted
+- [x] Every scenario records tool dispatch count and final workflow state.
+- [x] Ambiguous post-dispatch failure never causes an unapproved replay.
+- [x] Scope substitution and remediation requests execute no tool.
+- [x] Malformed, contradictory, and injected evidence cannot produce a trusted
   completion.
-- [ ] Reports include completion, refusal, evidence-validity, retry, review,
+- [x] Reports include completion, refusal, evidence-validity, retry, review,
   latency, and estimated-cost metrics where available.
-- [ ] The suite runs deterministically without a model key or production
+- [x] The suite runs deterministically without a model key or production
   database.
 
 ## Milestone 10: Evidence-gated harness experimentation
