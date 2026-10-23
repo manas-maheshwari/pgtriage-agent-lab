@@ -4,6 +4,7 @@ import { FIXTURE_EVIDENCE } from "../../src/adapters/tools/fixture-tool-client.j
 import {
   AuditEvidenceSchema,
   AuditRequestSchema,
+  HarnessConfigurationSchema,
   RemediationPlanSchema,
   ToolPlanSchema,
   WorkflowRecordSchema,
@@ -104,6 +105,32 @@ describe("AuditEvidenceSchema", () => {
     evidence.summary.low = 1;
 
     expect(AuditEvidenceSchema.safeParse(evidence).success).toBe(false);
+  });
+});
+
+describe("HarnessConfigurationSchema", () => {
+  it("accepts the one registered experimental surface", () => {
+    const result = HarnessConfigurationSchema.safeParse({
+      version: "1",
+      id: "candidate-retrieval-1-v1",
+      surface: "retrieval_limit",
+      retrievalLimit: 1,
+      description: "Retrieve one chunk per finding.",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects unknown surfaces and unbounded values", () => {
+    expect(
+      HarnessConfigurationSchema.safeParse({
+        version: "1",
+        id: "candidate-policy-change",
+        surface: "policy_code",
+        retrievalLimit: 100,
+        description: "Unsafe experiment.",
+      }).success,
+    ).toBe(false);
   });
 });
 

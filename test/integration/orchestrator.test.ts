@@ -11,6 +11,7 @@ import {
 } from "../../src/adapters/tools/fixture-tool-client.js";
 import { MemoryTraceRecorder } from "../../src/observability/memory-trace-recorder.js";
 import { NoopRetriever } from "../../src/ports/retriever.js";
+import type { Retriever } from "../../src/ports/retriever.js";
 import { AgentOrchestrator } from "../../src/runtime/orchestrator.js";
 import { formatConciseWorkflow } from "../../src/output/concise-formatter.js";
 
@@ -26,6 +27,8 @@ function harness(options: {
   model?: ConstructorParameters<typeof FakeModelProvider>[0];
   tool?: ConstructorParameters<typeof FixtureToolClient>[0];
   grounded?: boolean;
+  retriever?: Retriever;
+  retrievalLimit?: number;
 } = {}) {
   const model = new FakeModelProvider(options.model);
   const tools = new FixtureToolClient(options.tool);
@@ -36,9 +39,14 @@ function harness(options: {
     tools,
     store,
     traces,
-    retriever: options.grounded
-      ? new MarkdownCorpusRetriever(resolve(process.cwd(), "corpus"))
-      : new NoopRetriever(),
+    retriever:
+      options.retriever ??
+      (options.grounded
+        ? new MarkdownCorpusRetriever(resolve(process.cwd(), "corpus"))
+        : new NoopRetriever()),
+    ...(options.retrievalLimit === undefined
+      ? {}
+      : { retrievalLimit: options.retrievalLimit }),
   });
   return { model, tools, store, traces, orchestrator };
 }
@@ -303,5 +311,24 @@ describe("AgentOrchestrator", () => {
 
     expect(workflow.state).toBe("TERMINAL_FAILURE");
     expect(workflow.error?.code).toBe("OUTPUT_CLAIMS_EXECUTION");
+  });
+
+  it("applies the registered retrieval limit without changing policy", async () => {
+    const limits: number[] = [];
+    const retriever: Retriever = {
+      async retrieve(_finding, limit) {
+        limits.push(limit);
+        return [];
+      },
+    };
+    const { orchestrator } = harness({ retriever, retrievalLimit: 1 });
+    const workflow = await orchestrator.run({
+      ...request,
+      idempotencyKey: "integration-request-retrieval-limit",
+    });
+
+    expect(workflow.state).toBe("COMPLETED");
+    expect(limits.length).toBeGreaterThan(0);
+    expect(new Set(limits)).toEqual(new Set([1]));
   });
 });

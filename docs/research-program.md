@@ -125,8 +125,12 @@ As of October 23, 2026:
 - pgtriage 0.2.1 is released with duplicate-index candidate selection;
 - the deterministic conformance baseline passes 11 of 11 scenarios against the
   recorded pgtriage 0.2.1 contract;
-- the first bounded harness experiment is next and remains blocked from changing
-  policy, state, retry, tool-authorization, or output-validation code.
+- the first bounded harness experiment compared retrieval limits of two and one
+  on the same 11 scenarios;
+- both variants preserved safety, but the candidate cut supporting citations in
+  half without a measured cost benefit, so the baseline remained active;
+- future experiments remain blocked from changing policy, state, retry,
+  tool-authorization, or output-validation code.
 
 ## Research log
 

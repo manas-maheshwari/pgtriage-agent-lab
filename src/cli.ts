@@ -7,6 +7,7 @@ import { AnthropicModelProvider } from "./adapters/model/anthropic-model-provide
 import { MemoryWorkflowStore } from "./adapters/persistence/memory-workflow-store.js";
 import { MarkdownCorpusRetriever } from "./adapters/retrieval/markdown-corpus-retriever.js";
 import { FixtureToolClient } from "./adapters/tools/fixture-tool-client.js";
+import { loadActiveHarnessConfiguration } from "./config/harness.js";
 import { fixtureMcpToolClient, realPgTriageToolClient } from "./config/tool-clients.js";
 import type { AuditRequest } from "./domain/index.js";
 import { JsonlTraceRecorder } from "./observability/jsonl-trace-recorder.js";
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
     process.env.ANTHROPIC_API_KEY && mode === "real"
       ? new AnthropicModelProvider()
       : new FakeModelProvider();
+  const harness = await loadActiveHarnessConfiguration(
+    resolve(rootDir, "config/harness"),
+  );
 
   const orchestrator = new AgentOrchestrator({
     model,
@@ -40,6 +44,7 @@ async function main(): Promise<void> {
     store,
     traces,
     retriever: new MarkdownCorpusRetriever(resolve(rootDir, "corpus")),
+    retrievalLimit: harness.retrievalLimit,
   });
 
   try {

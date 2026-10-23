@@ -46,17 +46,23 @@ export interface OrchestratorDependencies {
   budget?: RuntimeBudgetConfig;
   workerId?: string;
   leaseTtlMs?: number;
+  retrievalLimit?: number;
 }
 
 export class AgentOrchestrator {
   private readonly policy: PolicyEngine;
   private readonly workerId: string;
   private readonly leaseTtlMs: number;
+  private readonly retrievalLimit: number;
 
   constructor(private readonly dependencies: OrchestratorDependencies) {
     this.policy = dependencies.policy ?? new PolicyEngine();
     this.workerId = dependencies.workerId ?? randomUUID();
     this.leaseTtlMs = dependencies.leaseTtlMs ?? 60_000;
+    this.retrievalLimit = dependencies.retrievalLimit ?? 2;
+    if (!Number.isInteger(this.retrievalLimit) || this.retrievalLimit < 1) {
+      throw new Error("retrievalLimit must be a positive integer.");
+    }
   }
 
   async run(input: unknown): Promise<WorkflowRecord> {
@@ -363,7 +369,9 @@ export class AgentOrchestrator {
       { workflowId: workflow.workflowId, kind: "retrieval", name: "retrieve" },
       async () => {
         const perFinding = await Promise.all(
-          findings.map((finding) => this.dependencies.retriever.retrieve(finding, 2)),
+          findings.map((finding) =>
+            this.dependencies.retriever.retrieve(finding, this.retrievalLimit),
+          ),
         );
         const unique = new Map<string, RetrievedChunk>();
         for (const chunk of perFinding.flat()) {
