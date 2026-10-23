@@ -121,6 +121,7 @@ remaining gaps and the design changes that followed testing.
 | [Architecture](docs/architecture.md) | Understand components and trust boundaries |
 | [Local integration](docs/local-runtime.md) | Connect Agent Lab to pgtriage |
 | [Post-run review](docs/run-review.md) | Understand the Jev routing layer |
+| [Research program](docs/research-program.md) | See how papers become bounded, measured experiments |
 | [Cloudflare notes](cloudflare/README.md) | Inspect the hosted chat implementation |
 | [Privacy review](docs/review/PRIVACY-CHECK.md) | Review publication and data-handling checks |
 

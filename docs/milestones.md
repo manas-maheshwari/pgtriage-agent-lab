@@ -233,6 +233,59 @@ Acceptance criteria:
 - [x] One sanitized live Jev acceptance call is recorded against a synthetic run.
 - [ ] A labeled live corpus measures route accuracy, calibration, latency and cost.
 
+## Milestone 9: Cross-repository conformance suite
+
+**Goal:** Prove that the pgtriage and Agent Lab boundary remains safe under
+failures, retries, malformed evidence, and adversarial inputs.
+
+Deliverables:
+
+- versioned cross-repository scenarios;
+- deterministic fault injection at pre-dispatch, post-dispatch, transport, and
+  validation boundaries;
+- machine-readable baseline and comparison reports;
+- a recorded successful path and a fail-closed path.
+
+Acceptance criteria:
+
+- [ ] Every scenario records tool dispatch count and final workflow state.
+- [ ] Ambiguous post-dispatch failure never causes an unapproved replay.
+- [ ] Scope substitution and remediation requests execute no tool.
+- [ ] Malformed, contradictory, and injected evidence cannot produce a trusted
+  completion.
+- [ ] Reports include completion, refusal, evidence-validity, retry, review,
+  latency, and estimated-cost metrics where available.
+- [ ] The suite runs deterministically without a model key or production
+  database.
+
+## Milestone 10: Evidence-gated harness experimentation
+
+**Goal:** Compare bounded harness variants without allowing model-generated
+changes to weaken deterministic controls.
+
+Deliverables:
+
+- versioned harness configuration contract;
+- baseline and candidate runner;
+- safety-gated comparison report;
+- explicit human-controlled adoption record;
+- persisted evidence-supported lessons from accepted experiments.
+
+Acceptance criteria:
+
+- [ ] The first experiment varies exactly one approved harness surface.
+- [ ] Baseline and candidates run the same versioned scenarios.
+- [ ] Authorization, state, retry, tool, and output-policy code is immutable to
+  the experiment.
+- [ ] Any deterministic safety regression disqualifies a candidate regardless
+  of task-quality gains.
+- [ ] No candidate is adopted without explicit human approval.
+- [ ] The report distinguishes same-task improvement from generalization to
+  unseen scenarios.
+
+See the [research-driven engineering program](research-program.md) for intake,
+promotion, and sequencing rules.
+
 ## Working discipline
 
 At each milestone:
