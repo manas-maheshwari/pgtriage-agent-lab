@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { FIXTURE_EVIDENCE } from "../../src/adapters/tools/fixture-tool-client.js";
 import {
+  AuditEvidenceSchema,
   AuditRequestSchema,
   RemediationPlanSchema,
   ToolPlanSchema,
@@ -85,6 +87,23 @@ describe("ToolPlanSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("AuditEvidenceSchema", () => {
+  it("rejects a summary whose total does not match the findings", () => {
+    const evidence = structuredClone(FIXTURE_EVIDENCE);
+    evidence.summary.total_findings = 2;
+
+    expect(AuditEvidenceSchema.safeParse(evidence).success).toBe(false);
+  });
+
+  it("rejects severity counts that contradict the findings", () => {
+    const evidence = structuredClone(FIXTURE_EVIDENCE);
+    evidence.summary.high = 0;
+    evidence.summary.low = 1;
+
+    expect(AuditEvidenceSchema.safeParse(evidence).success).toBe(false);
   });
 });
 

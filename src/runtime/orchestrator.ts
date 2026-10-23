@@ -246,7 +246,16 @@ export class AgentOrchestrator {
         },
         (error) => canRetryToolCall(error, workflow.authorizedTool!),
       );
-      const validatedEvidence = AuditEvidenceSchema.parse(evidence);
+      const parsedEvidence = AuditEvidenceSchema.safeParse(evidence);
+      if (!parsedEvidence.success) {
+        throw new AgentRuntimeError(
+          "TOOL_EVIDENCE_INVALID",
+          "Tool evidence failed structural or summary-consistency validation.",
+          false,
+          { cause: parsedEvidence.error },
+        );
+      }
+      const validatedEvidence = parsedEvidence.data;
       workflow = await this.transition(
         workflow,
         "TOOL_COMPLETE",

@@ -52,6 +52,7 @@ prints an advisory result using synthetic diagnostics.
 | In-process workflow | `npm run demo:fixture:concise` | The same orchestration without MCP transport |
 | Local chat UI | `npm run dev:cloudflare` | Saved investigations and evidence-based follow-ups |
 | Post-run review | `npm run demo:review` | Deterministic closure and escalation routing |
+| Conformance suite | `npm run eval:conformance` | Failure injection across the pgtriage/client boundary |
 | Real pgtriage | `npm run demo:real:concise` | Explicitly approved diagnostics against a configured database |
 
 Read the [integration guide](docs/local-runtime.md) before using the real pgtriage
@@ -96,6 +97,7 @@ npx playwright install chromium
 npm run test:all
 npm run eval
 npm run eval:review
+npm run eval:conformance
 ```
 
 </details>
@@ -121,6 +123,7 @@ remaining gaps and the design changes that followed testing.
 | [Architecture](docs/architecture.md) | Understand components and trust boundaries |
 | [Local integration](docs/local-runtime.md) | Connect Agent Lab to pgtriage |
 | [Post-run review](docs/run-review.md) | Understand the Jev routing layer |
+| [Conformance](docs/conformance.md) | Inspect failure injection and boundary metrics |
 | [Research program](docs/research-program.md) | See how papers become bounded, measured experiments |
 | [Cloudflare notes](cloudflare/README.md) | Inspect the hosted chat implementation |
 | [Privacy review](docs/review/PRIVACY-CHECK.md) | Review publication and data-handling checks |

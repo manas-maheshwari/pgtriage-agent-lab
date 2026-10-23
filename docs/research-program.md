@@ -118,6 +118,16 @@ failure instead of blindly repeating work or relying only on a local timeout.
 
 Launch, correctness, and regression work preempt research experiments.
 
+## Current status
+
+As of October 23, 2026:
+
+- pgtriage 0.2.1 is released with duplicate-index candidate selection;
+- the deterministic conformance baseline passes 11 of 11 scenarios against the
+  recorded pgtriage 0.2.1 contract;
+- the first bounded harness experiment is next and remains blocked from changing
+  policy, state, retry, tool-authorization, or output-validation code.
+
 ## Research log
 
 | Date | Source | Candidate use | Decision |

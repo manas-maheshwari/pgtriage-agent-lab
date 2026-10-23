@@ -38,7 +38,37 @@ export const AuditEvidenceSchema = z
     summary: AuditSummarySchema,
     sections: z.record(z.string(), z.unknown()).optional(),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((value, context) => {
+    if (value.summary.total_findings !== value.findings.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["summary", "total_findings"],
+        message: "Summary total_findings must equal the number of findings.",
+      });
+    }
+
+    const expectedCounts = {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      info: 0,
+    };
+    for (const finding of value.findings) {
+      expectedCounts[finding.severity] += 1;
+    }
+    for (const [severity, expected] of Object.entries(expectedCounts)) {
+      const actual = value.summary[severity as keyof typeof expectedCounts];
+      if (actual !== expected) {
+        context.addIssue({
+          code: "custom",
+          path: ["summary", severity],
+          message: `Summary ${severity} count must equal ${expected}.`,
+        });
+      }
+    }
+  });
 
 export type PgTriageFinding = z.infer<typeof PgTriageFindingSchema>;
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
