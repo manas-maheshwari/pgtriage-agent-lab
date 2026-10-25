@@ -66,7 +66,11 @@ quality.
 ## What is enforced in code
 
 - **Authorization:** proposed tools and schema scope must satisfy explicit policy.
-- **Retry safety:** ambiguous post-dispatch failures are not replayed blindly.
+- **Operation reconciliation:** a persisted audit UUID is checked before dispatch
+  and after ambiguous failures, so completed evidence can be recovered without a
+  blind replay.
+- **Retry safety:** dispatch is retried only when pgtriage proves the operation
+  was never committed; in-progress, failed, expired, and conflicting runs stop.
 - **Evidence checks:** valid JSON must still pass citation and advisory validation.
 - **Bounded inference:** hosted attempts reserve persisted quota before dispatch.
 - **Operational review:** an optional TypeSafe Jev assessment classifies terminal
@@ -80,15 +84,15 @@ The Jev integration is documented with a
 
 ## Verification
 
-The recorded October 23 suite passed:
+The recorded October 24 suite passed:
 
 | Check | Result |
 | --- | ---: |
-| Automated tests | 101 |
+| Automated tests | 110 |
 | TypeScript checks | 2 |
 | Workflow evaluation cases | 26 |
 | Post-run routing cases | 7 |
-| Cross-repository conformance cases | 11 |
+| Cross-repository conformance cases | 16 |
 | Harness variants compared | 2 |
 
 <details>

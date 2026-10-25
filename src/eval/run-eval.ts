@@ -232,7 +232,7 @@ function buildCases(): readonly EvalCase[] {
       tool: { ambiguousFailureCount: 1 },
       expect: {
         state: "TERMINAL_FAILURE",
-        errorCode: "MCP_AMBIGUOUS_TRANSPORT_FAILURE",
+        errorCode: "AUDIT_RUN_IN_PROGRESS",
         maxToolCalls: 1,
         maxDispatches: 1,
       },
@@ -281,7 +281,7 @@ function buildCases(): readonly EvalCase[] {
       tool: { delayMs: 20 },
       expect: {
         state: "TERMINAL_FAILURE",
-        errorCode: "TOOL_TIMEOUT",
+        errorCode: "AUDIT_RUN_IN_PROGRESS",
         maxToolCalls: 1,
         maxDispatches: 1,
       },

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -23,18 +24,22 @@ describe("McpToolClient", () => {
         }),
       ]),
     );
+    const auditRunId = randomUUID();
     const result = await client.callTool(
       {
         tool: "full_audit",
         arguments: { slowQueryLimit: 10, schemaName: "pgtriage_demo" },
         reason: "test",
       },
-      { workflowId: "test-workflow", timeoutMs: 5_000 },
+      { workflowId: auditRunId, timeoutMs: 5_000 },
     );
     expect(result.summary.total_findings).toBe(1);
     expect(
       (result as unknown as { fixture_request_scope: { schema_name: string } })
         .fixture_request_scope.schema_name,
     ).toBe("pgtriage_demo");
+    const recovered = await client.getAuditRun(auditRunId, 5_000);
+    expect(recovered.status).toBe("COMPLETED");
+    expect(recovered.result?.summary.total_findings).toBe(1);
   });
 });

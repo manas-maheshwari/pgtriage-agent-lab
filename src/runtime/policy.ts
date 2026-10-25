@@ -78,11 +78,36 @@ export class PolicyEngine {
       tool.inputSchema.type !== "object" ||
       !properties ||
       !isRecord(properties.slow_query_limit) ||
-      !isRecord(properties.schema_name)
+      !isRecord(properties.schema_name) ||
+      !isRecord(properties.audit_run_id)
     ) {
       throw new AgentRuntimeError(
         "TOOL_CONTRACT_MISMATCH",
         "The discovered full_audit input schema is incompatible with the runtime contract.",
+        false,
+      );
+    }
+
+    const reconciliationTool = tools.find(
+      (candidate) => candidate.name === "get_audit_run",
+    );
+    const reconciliationProperties = isRecord(
+      reconciliationTool?.inputSchema.properties,
+    )
+      ? reconciliationTool.inputSchema.properties
+      : undefined;
+    if (
+      !reconciliationTool ||
+      reconciliationTool.readOnlyHint !== true ||
+      reconciliationTool.destructiveHint === true ||
+      reconciliationTool.idempotentHint !== true ||
+      reconciliationTool.inputSchema.type !== "object" ||
+      !reconciliationProperties ||
+      !isRecord(reconciliationProperties.audit_run_id)
+    ) {
+      throw new AgentRuntimeError(
+        "RECONCILIATION_TOOL_REQUIRED",
+        "The MCP server does not expose the required read-only audit reconciliation contract.",
         false,
       );
     }

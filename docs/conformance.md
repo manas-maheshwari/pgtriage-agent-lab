@@ -24,7 +24,10 @@ The command needs no database, model key, or cloud account. It writes:
 
 - successful governed tool use;
 - retry after a proven pre-dispatch failure;
-- fail-closed handling after ambiguous dispatch;
+- completed-result recovery after an ambiguous dispatch response;
+- retry only after reconciliation proves an operation was not committed;
+- fail-closed handling for in-progress, failed, expired, and conflicting runs;
+- process-restart recovery from a persisted `TOOL_RUNNING` workflow;
 - duplicate request delivery;
 - missing, malformed, and internally contradictory tool evidence;
 - an execution claim injected through tool evidence;

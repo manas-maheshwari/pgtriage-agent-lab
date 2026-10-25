@@ -22,6 +22,7 @@ Request boundary
   - validate input
   - bind caller-authorized schema scope
   - assign workflow ID
+  - persist audit run ID before tool dispatch
   - enforce idempotency
     |
     v
@@ -41,6 +42,8 @@ Deterministic orchestrator ----------------------+
     |      - reject executable remediation        |
     |                                            |
     +--> ToolClient --> MCP --> pgtriage/fixture  |
+    |      - reconcile durable audit identity     |
+    |      - recover retained completed evidence  |
     |                                            |
     +--> WorkflowStore <--------------------------+
     |
@@ -67,6 +70,9 @@ RECEIVED
   -> PLAN_VALIDATED
   -> TOOL_AUTHORIZED
   -> TOOL_RUNNING
+       -> reconcile audit run ID
+       -> dispatch only when NOT_FOUND
+       -> reconcile again after ambiguous failure
   -> TOOL_COMPLETE
   -> SYNTHESIZING
   -> OUTPUT_VALIDATED
@@ -182,6 +188,7 @@ The MCP adapter owns:
 - capability discovery;
 - tool-schema normalization;
 - timeouts and cancellation;
+- durable operation lookup before dispatch and after ambiguous transport;
 - bounded result conversion;
 - transport failures.
 
@@ -189,13 +196,15 @@ It maps the TypeScript `schemaName` field to the pgtriage wire argument `schema_
 
 MCP annotations describe server intent; they are not authorization. The runtime still requires a controlled server configuration, a tool allowlist, validated arguments, caller authorization, and a policy check immediately before execution.
 
-The first fixture server exposes only `full_audit`. There is no generic SQL tool.
+The fixture server exposes `full_audit` and the read-only `get_audit_run`
+reconciliation tool. There is no generic SQL tool.
 
 ### Workflow store
 
 The store persists:
 
 - workflow identity and idempotency key;
+- pgtriage audit run identity before MCP dispatch;
 - current state and transition history;
 - plan hash;
 - tool-call arguments and result hash;
@@ -203,6 +212,12 @@ The store persists:
 - final result or terminal failure.
 
 Large prompts and database evidence are not dumped into the event record. Store hashes and bounded previews; add encrypted artifact storage only if a later requirement justifies it.
+
+Workflow idempotency, worker leases, state compare-and-set, and pgtriage audit
+identity are separate controls. The idempotency key deduplicates a logical user
+request. The lease limits active ownership. Expected-state writes reject stale
+workers. The audit run ID reconciles work that may have crossed the MCP boundary
+before a response was lost.
 
 ### Trace recorder
 

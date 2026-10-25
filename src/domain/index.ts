@@ -1,8 +1,12 @@
 export {
   AuditEvidenceSchema,
+  AuditRunLookupSchema,
+  AuditRunStatusSchema,
   AuditSummarySchema,
   PgTriageFindingSchema,
   type AuditEvidence,
+  type AuditRunLookup,
+  type AuditRunStatus,
   type AuditSummary,
   type PgTriageFinding,
 } from "./evidence.js";

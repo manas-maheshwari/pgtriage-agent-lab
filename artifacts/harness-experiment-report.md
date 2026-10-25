@@ -1,20 +1,20 @@
 # Controlled harness experiment: retrieval limit
 
-Generated: 2026-10-23T14:45:28.428Z
+Generated: 2026-10-25T00:10:08.325Z
 
 - Experiment: retrieval-limit-v1 (contract 1)
 - Method: controlled-propose-probe-compare
 - Varied surface: retrieval_limit
-- Scenario hash: `72e73c67262c08eb65c28e1820dae404b7e9cdb02b40d29eed47c46f161da5ed`
+- Scenario hash: `0692d95e58ca698715c6eca34f16d298afeef2e7a0c331f9fad02b8ae1dd365e`
 - Model hash: `b665d446e52a829f9d0788332e862d71fb077c526760f9ad7650ab938dc07f62`
-- Report hash: `be4f8bee85e388073a9e16197f19cf9ed7afdb3b984191bbcc379856c476e016`
+- Report hash: `58105f9fc68f39e850126df3fa8b2ec09bb704494dd775575e7b25d63c9e1ec5`
 - Identical scenario set: true
 - Held-out generalization measured: false
 
 | Variant | Config | Retrieval limit | Safety eligible | Passed | Citations | Unsafe completions | Unbounded loops |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |
-| Baseline | baseline-retrieval-2-v1 | 2 | true | 11/11 | 8 | 0 | 0 |
-| Candidate | candidate-retrieval-1-v1 | 1 | true | 11/11 | 4 | 0 | 0 |
+| Baseline | baseline-retrieval-2-v1 | 2 | true | 16/16 | 12 | 0 | 0 |
+| Candidate | candidate-retrieval-1-v1 | 1 | true | 16/16 | 6 | 0 | 0 |
 
 ## Decision
 

@@ -1,9 +1,12 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { FakeModelProvider } from "../../src/adapters/model/fake-model-provider.js";
 import { MemoryWorkflowStore } from "../../src/adapters/persistence/memory-workflow-store.js";
+import { SqliteWorkflowStore } from "../../src/adapters/persistence/sqlite-workflow-store.js";
 import { MarkdownCorpusRetriever } from "../../src/adapters/retrieval/markdown-corpus-retriever.js";
 import {
   FIXTURE_EVIDENCE,
@@ -150,7 +153,7 @@ describe("AgentOrchestrator", () => {
     expect(tools.dispatchCount).toBe(1);
   });
 
-  it("does not retry non-idempotent full_audit after an ambiguous dispatch failure", async () => {
+  it("does not replay an audit that reconciliation reports as started", async () => {
     const { orchestrator, tools } = harness({
       tool: { ambiguousFailureCount: 1 },
     });
@@ -160,9 +163,133 @@ describe("AgentOrchestrator", () => {
     });
 
     expect(workflow.state).toBe("TERMINAL_FAILURE");
-    expect(workflow.error?.code).toBe("MCP_AMBIGUOUS_TRANSPORT_FAILURE");
+    expect(workflow.error?.code).toBe("AUDIT_RUN_IN_PROGRESS");
     expect(tools.callCount).toBe(1);
     expect(tools.dispatchCount).toBe(1);
+  });
+
+  it("recovers completed evidence after an ambiguous dispatch response", async () => {
+    const { orchestrator, tools } = harness({
+      tool: { ambiguousFailureCount: 1, ambiguousOutcome: "completed" },
+    });
+    const workflow = await orchestrator.run({
+      ...request,
+      idempotencyKey: "integration-request-ambiguous-completed",
+    });
+
+    expect(workflow.state).toBe("COMPLETED");
+    expect(workflow.toolEvidence?.summary.total_findings).toBe(1);
+    expect(tools.callCount).toBe(1);
+    expect(tools.dispatchCount).toBe(1);
+    expect(tools.reconciliationCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it("retries only when reconciliation proves an ambiguous dispatch was not committed", async () => {
+    const { orchestrator, tools } = harness({
+      tool: { ambiguousFailureCount: 1, ambiguousOutcome: "not_found" },
+    });
+    const workflow = await orchestrator.run({
+      ...request,
+      idempotencyKey: "integration-request-ambiguous-not-found",
+    });
+
+    expect(workflow.state).toBe("COMPLETED");
+    expect(tools.callCount).toBe(2);
+    expect(tools.dispatchCount).toBe(2);
+  });
+
+  it.each([
+    ["failed", "AUDIT_RUN_FAILED"],
+    ["expired", "AUDIT_RUN_EXPIRED"],
+    ["conflict", "AUDIT_RUN_CONFLICT"],
+  ] as const)(
+    "fails closed when reconciliation reports %s",
+    async (ambiguousOutcome, expectedCode) => {
+      const { orchestrator, tools } = harness({
+        tool: { ambiguousFailureCount: 1, ambiguousOutcome },
+      });
+      const workflow = await orchestrator.run({
+        ...request,
+        idempotencyKey: `integration-request-${ambiguousOutcome}`,
+      });
+
+      expect(workflow.state).toBe("TERMINAL_FAILURE");
+      expect(workflow.error?.code).toBe(expectedCode);
+      expect(tools.dispatchCount).toBe(1);
+    },
+  );
+
+  it("recovers a completed audit after the Agent Lab process restarts in TOOL_RUNNING", async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), "agent-lab-reconcile-"));
+    const databasePath = resolve(directory, "workflows.sqlite");
+    const firstStore = new SqliteWorkflowStore(databasePath);
+    const created = await firstStore.createOrGet({
+      ...request,
+      idempotencyKey: "integration-request-process-restart",
+    });
+    const workflowId = created.workflow.workflowId;
+    await firstStore.transition(workflowId, "RECEIVED", "PLANNING", "accepted");
+    await firstStore.transition(
+      workflowId,
+      "PLANNING",
+      "PLAN_VALIDATED",
+      "planned",
+      {
+        plan: {
+          tool: "full_audit",
+          arguments: { slowQueryLimit: 10 },
+          reason: "test restart recovery",
+        },
+        planHash: "test-plan-hash",
+      },
+    );
+    await firstStore.transition(
+      workflowId,
+      "PLAN_VALIDATED",
+      "TOOL_AUTHORIZED",
+      "authorized",
+      {
+        authorizedTool: {
+          name: "full_audit",
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: false,
+        },
+      },
+    );
+    await firstStore.transition(
+      workflowId,
+      "TOOL_AUTHORIZED",
+      "TOOL_RUNNING",
+      "dispatch started",
+      { auditRunId: workflowId },
+    );
+    await firstStore.close();
+
+    const tools = new FixtureToolClient();
+    tools.seedAuditRun(workflowId, "COMPLETED", FIXTURE_EVIDENCE);
+    const restartedStore = new SqliteWorkflowStore(databasePath);
+    const restarted = new AgentOrchestrator({
+      model: new FakeModelProvider(),
+      tools,
+      store: restartedStore,
+      traces: new MemoryTraceRecorder(),
+      retriever: new NoopRetriever(),
+    });
+
+    try {
+      const workflow = await restarted.run({
+        ...request,
+        idempotencyKey: "integration-request-process-restart",
+      });
+      expect(workflow.state).toBe("COMPLETED");
+      expect(workflow.toolEvidence?.summary.total_findings).toBe(1);
+      expect(tools.dispatchCount).toBe(0);
+      expect(tools.reconciliationCount).toBe(1);
+    } finally {
+      await restartedStore.close();
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it("does not retry non-idempotent full_audit after an ambiguous timeout", async () => {
@@ -189,7 +316,7 @@ describe("AgentOrchestrator", () => {
     });
 
     expect(workflow.state).toBe("TERMINAL_FAILURE");
-    expect(workflow.error?.code).toBe("TOOL_TIMEOUT");
+    expect(workflow.error?.code).toBe("AUDIT_RUN_IN_PROGRESS");
     expect(tools.callCount).toBe(1);
     expect(tools.dispatchCount).toBe(1);
   });
@@ -206,6 +333,7 @@ describe("AgentOrchestrator", () => {
     expect(workflow.plan?.arguments.schemaName).toBe("pgtriage_demo");
     expect(tools.lastWireArguments).toEqual({
       slow_query_limit: 10,
+      audit_run_id: workflow.auditRunId,
       schema_name: "pgtriage_demo",
     });
   });
@@ -235,7 +363,10 @@ describe("AgentOrchestrator", () => {
 
     expect(workflow.state).toBe("COMPLETED");
     expect(workflow.plan?.arguments.schemaName).toBeUndefined();
-    expect(tools.lastWireArguments).toEqual({ slow_query_limit: 10 });
+    expect(tools.lastWireArguments).toEqual({
+      slow_query_limit: 10,
+      audit_run_id: workflow.auditRunId,
+    });
   });
 
   it("keeps credentials out of concise output", async () => {
@@ -251,6 +382,7 @@ describe("AgentOrchestrator", () => {
     expect(output).not.toContain("secret-user");
     expect(output).not.toContain("secret-password");
     expect(output).toContain("Authorization: ALLOWED");
+    expect(output).toContain(`\"audit_run_id\":\"${workflow.auditRunId}\"`);
   });
 
   it("rejects generated output that falsely claims execution", async () => {
@@ -296,6 +428,34 @@ describe("AgentOrchestrator", () => {
     expect(workflow.state).toBe("TERMINAL_FAILURE");
     expect(workflow.error?.code).toBe("TOOL_CONTRACT_MISMATCH");
     expect(tools.callCount).toBe(0);
+    expect(tools.dispatchCount).toBe(0);
+  });
+
+  it("rejects a full_audit contract that cannot carry durable operation identity", async () => {
+    const { orchestrator, tools } = harness({
+      tool: { omitAuditRunIdContract: true },
+    });
+    const workflow = await orchestrator.run({
+      ...request,
+      idempotencyKey: "integration-request-missing-audit-run-id",
+    });
+
+    expect(workflow.state).toBe("TERMINAL_FAILURE");
+    expect(workflow.error?.code).toBe("TOOL_CONTRACT_MISMATCH");
+    expect(tools.dispatchCount).toBe(0);
+  });
+
+  it("rejects an MCP server without the reconciliation tool", async () => {
+    const { orchestrator, tools } = harness({
+      tool: { omitReconciliationTool: true },
+    });
+    const workflow = await orchestrator.run({
+      ...request,
+      idempotencyKey: "integration-request-missing-reconciliation",
+    });
+
+    expect(workflow.state).toBe("TERMINAL_FAILURE");
+    expect(workflow.error?.code).toBe("RECONCILIATION_TOOL_REQUIRED");
     expect(tools.dispatchCount).toBe(0);
   });
 

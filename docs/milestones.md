@@ -30,7 +30,7 @@ Deliverables:
 - Zod contracts for request, tool plan, workflow state, and remediation plan;
 - explicit orchestrator with legal state transitions;
 - fake model provider;
-- fixture MCP server exposing only `full_audit`;
+- fixture MCP server exposing `full_audit` and read-only audit reconciliation;
 - MCP tool client;
 - deterministic policy engine;
 - in-memory workflow store;
@@ -90,10 +90,12 @@ Deliverables:
 
 Acceptance criteria:
 
-- [ ] Restarting after `TOOL_COMPLETE` does not rerun the audit.
+- [x] Restarting from `TOOL_RUNNING` recovers a retained pgtriage result without rerunning the audit.
 - [x] Only one worker owns an active workflow lease.
 - [x] Duplicate requests resolve to the durable workflow.
 - [x] A stale lease can be reclaimed safely.
+- [x] Ambiguous dispatch is retried only after pgtriage reports `NOT_FOUND`.
+- [x] In-progress, failed, expired, and conflicting audit identities fail closed.
 
 ## Milestone 4: Evidence retrieval
 
@@ -257,6 +259,8 @@ Acceptance criteria:
   latency, and estimated-cost metrics where available.
 - [x] The suite runs deterministically without a model key or production
   database.
+- [x] The 0.4.0 suite covers all six reconciliation outcomes and process-restart
+  recovery against the 0.3.0 pgtriage contract.
 
 ## Milestone 10: Evidence-gated harness experimentation
 

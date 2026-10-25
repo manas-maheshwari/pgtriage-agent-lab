@@ -207,6 +207,7 @@ export class AgentOrchestrator {
         workflow,
         "TOOL_RUNNING",
         "Starting the authorized MCP tool.",
+        { auditRunId: workflow.auditRunId ?? workflow.workflowId },
       );
     }
 
@@ -225,32 +226,9 @@ export class AgentOrchestrator {
           false,
         );
       }
-      const evidence = await this.retry(
-        workflow.workflowId,
-        "tool",
+      const evidence = await this.executeAuditWithReconciliation(
+        workflow,
         budget,
-        async () => {
-          budget.consumeToolCall();
-          return traced(
-            this.dependencies.traces,
-            {
-              workflowId: workflow.workflowId,
-              kind: "tool",
-              name: workflow.plan!.tool,
-              attributes: {
-                schemaScope:
-                  workflow.plan!.arguments.schemaName ?? "all-non-system-schemas",
-                idempotentHint: workflow.authorizedTool!.idempotentHint ?? false,
-              },
-            },
-            () =>
-              this.dependencies.tools.callTool(workflow.plan!, {
-                workflowId: workflow.workflowId,
-                timeoutMs: budget.config.toolTimeoutMs,
-              }),
-          );
-        },
-        (error) => canRetryToolCall(error, workflow.authorizedTool!),
       );
       const parsedEvidence = AuditEvidenceSchema.safeParse(evidence);
       if (!parsedEvidence.success) {
@@ -386,6 +364,97 @@ export class AgentOrchestrator {
     return chunks;
   }
 
+  private async executeAuditWithReconciliation(
+    workflow: WorkflowRecord,
+    budget: RuntimeBudget,
+  ) {
+    const plan = workflow.plan!;
+    const authorizedTool = workflow.authorizedTool!;
+    const auditRunId = workflow.auditRunId ?? workflow.workflowId;
+
+    return this.retry(
+      workflow.workflowId,
+      "tool",
+      budget,
+      async () => {
+        const beforeDispatch = await this.lookupAuditRun(
+          workflow.workflowId,
+          auditRunId,
+          budget.config.toolTimeoutMs,
+        );
+        const recovered = evidenceFromLookup(beforeDispatch, auditRunId);
+        if (recovered) return recovered;
+
+        budget.consumeToolCall();
+        try {
+          return await traced(
+            this.dependencies.traces,
+            {
+              workflowId: workflow.workflowId,
+              kind: "tool",
+              name: plan.tool,
+              attributes: {
+                auditRunId,
+                schemaScope:
+                  plan.arguments.schemaName ?? "all-non-system-schemas",
+                idempotentHint: authorizedTool.idempotentHint ?? false,
+              },
+            },
+            () =>
+              this.dependencies.tools.callTool(plan, {
+                workflowId: auditRunId,
+                timeoutMs: budget.config.toolTimeoutMs,
+              }),
+          );
+        } catch (error) {
+          const normalized = normalizeError(error);
+          if (!(normalized instanceof AmbiguousToolDispatchError)) throw normalized;
+
+          const afterDispatch = await this.lookupAuditRun(
+            workflow.workflowId,
+            auditRunId,
+            budget.config.toolTimeoutMs,
+          );
+          const recoveredAfterFailure = evidenceFromLookup(
+            afterDispatch,
+            auditRunId,
+          );
+          if (recoveredAfterFailure) return recoveredAfterFailure;
+          if (afterDispatch.status === "NOT_FOUND") {
+            throw new PreDispatchToolError(
+              "AUDIT_RUN_NOT_FOUND_AFTER_AMBIGUOUS_DISPATCH",
+              "pgtriage confirmed that no durable audit operation exists; dispatch may be retried.",
+              { cause: normalized },
+            );
+          }
+          throw new AgentRuntimeError(
+            "AUDIT_RECONCILIATION_INVALID",
+            "The audit reconciliation response did not produce a safe recovery decision.",
+            false,
+          );
+        }
+      },
+      (error) => canRetryToolCall(error, authorizedTool),
+    );
+  }
+
+  private async lookupAuditRun(
+    workflowId: string,
+    auditRunId: string,
+    timeoutMs: number,
+  ) {
+    return traced(
+      this.dependencies.traces,
+      {
+        workflowId,
+        kind: "tool",
+        name: "get_audit_run",
+        attributes: { auditRunId },
+      },
+      () => this.dependencies.tools.getAuditRun(auditRunId, timeoutMs),
+    );
+  }
+
   private async transition(
     workflow: WorkflowRecord,
     to: WorkflowState,
@@ -447,6 +516,60 @@ export class AgentOrchestrator {
       }
     }
   }
+}
+
+function evidenceFromLookup(
+  lookup: Awaited<ReturnType<ToolClient["getAuditRun"]>>,
+  auditRunId: string,
+) {
+  if (lookup.audit_run_id !== auditRunId) {
+    throw new AgentRuntimeError(
+      "AUDIT_RUN_ID_MISMATCH",
+      "The reconciliation response referred to a different audit operation.",
+      false,
+    );
+  }
+  if (lookup.status === "NOT_FOUND") return undefined;
+  if (lookup.status === "COMPLETED") {
+    if (!lookup.result) {
+      throw new AgentRuntimeError(
+        "AUDIT_RECONCILIATION_INVALID",
+        "A completed audit operation did not include recoverable evidence.",
+        false,
+      );
+    }
+    return lookup.result;
+  }
+  throw reconciliationStateError(lookup.status, auditRunId);
+}
+
+function reconciliationStateError(
+  status: Exclude<
+    Awaited<ReturnType<ToolClient["getAuditRun"]>>["status"],
+    "NOT_FOUND" | "COMPLETED"
+  >,
+  auditRunId: string,
+): AgentRuntimeError {
+  const details = {
+    STARTED: [
+      "AUDIT_RUN_IN_PROGRESS",
+      `Audit run '${auditRunId}' may still be running; it was not replayed.`,
+    ],
+    FAILED: [
+      "AUDIT_RUN_FAILED",
+      `Audit run '${auditRunId}' previously failed and was not replayed.`,
+    ],
+    EXPIRED: [
+      "AUDIT_RUN_EXPIRED",
+      `Audit run '${auditRunId}' expired; an explicit rerun decision is required.`,
+    ],
+    CONFLICT: [
+      "AUDIT_RUN_CONFLICT",
+      `Audit run '${auditRunId}' is bound to a different database or request.`,
+    ],
+  } as const;
+  const [code, message] = details[status];
+  return new AgentRuntimeError(code, message, false);
 }
 
 const LOCALLY_NON_IDEMPOTENT_TOOLS = new Set(["full_audit", "analyze_slow_queries"]);

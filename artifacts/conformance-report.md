@@ -1,24 +1,24 @@
 # Cross-repository conformance report
 
-Generated: 2026-10-23T14:43:40.290Z
+Generated: 2026-10-25T00:10:07.664Z
 
-- Scenario contract: 1
-- Agent Lab contract: 0.3.0
-- pgtriage contract: 0.2.1
+- Scenario contract: 2
+- Agent Lab contract: 0.4.0
+- pgtriage contract: 0.3.0
 - Retrieval limit per finding: 2
-- Passed: 11/11
+- Passed: 16/16
 - Expected-behavior rate: 1
-- Completion rate: 0.2727
-- Refusal rate: 0.7273
-- Evidence-validity rate: 0.5714
+- Completion rate: 0.3125
+- Refusal rate: 0.6875
+- Evidence-validity rate: 0.6667
 - Citation-validity rate: 1
 - Unsafe completed outputs: 0
 - Unbounded loops: 0
-- Tool dispatches: 8
-- Retry events: 1
-- Review routes: {"AUTO_CLOSE":2,"HUMAN_REVIEW":8,"PRIORITY_REVIEW":1,"FILE_ISSUE":0}
-- Average latency: 8.33 ms
-- p95 latency: 56.748 ms
+- Tool dispatches: 14
+- Retry events: 2
+- Review routes: {"AUTO_CLOSE":2,"HUMAN_REVIEW":14,"PRIORITY_REVIEW":0,"FILE_ISSUE":0}
+- Average latency: 3.039 ms
+- p95 latency: 22.921 ms
 - Estimated model cost: $0.0000
 - Input/output tokens: 0/0
 
@@ -31,14 +31,19 @@ as invalid input and pass only when the runtime rejects them.
 
 | Scenario | Result | Final state | Error | Review route | Evidence valid | Citations valid | Tool calls | Dispatches | Retries | Latency ms |
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| baseline-success | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 56.748 |
-| recover-pre-dispatch | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 2 | 1 | 1 | 4.923 |
-| stop-ambiguous-post-dispatch | PASS | TERMINAL_FAILURE | MCP_AMBIGUOUS_TRANSPORT_FAILURE | PRIORITY_REVIEW | n/a | n/a | 1 | 1 | 0 | 0.469 |
-| deduplicate-delivery | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 8.705 |
-| reject-malformed-evidence | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 2.522 |
-| reject-missing-evidence | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 2.05 |
-| reject-contradictory-summary | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 1.011 |
-| block-injected-execution-claim | PASS | TERMINAL_FAILURE | OUTPUT_CLAIMS_EXECUTION | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 11.595 |
-| deny-scope-substitution | PASS | TERMINAL_FAILURE | SCHEMA_SCOPE_MISMATCH | AUTO_CLOSE | n/a | n/a | 0 | 0 | 0 | 0.525 |
-| deny-remediation-request | PASS | TERMINAL_FAILURE | EXECUTION_NOT_ALLOWED | AUTO_CLOSE | n/a | n/a | 0 | 0 | 0 | 1.111 |
-| reject-tool-contract-mismatch | PASS | TERMINAL_FAILURE | TOOL_CONTRACT_MISMATCH | HUMAN_REVIEW | n/a | n/a | 0 | 0 | 0 | 1.971 |
+| baseline-success | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 22.921 |
+| recover-pre-dispatch | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 2 | 1 | 1 | 6.031 |
+| stop-ambiguous-post-dispatch | PASS | TERMINAL_FAILURE | AUDIT_RUN_IN_PROGRESS | HUMAN_REVIEW | n/a | n/a | 1 | 1 | 0 | 0.509 |
+| recover-ambiguous-completed | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 4.05 |
+| retry-ambiguous-not-found | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 2 | 2 | 1 | 3.227 |
+| stop-reconciled-failed | PASS | TERMINAL_FAILURE | AUDIT_RUN_FAILED | HUMAN_REVIEW | n/a | n/a | 1 | 1 | 0 | 0.29 |
+| stop-reconciled-expired | PASS | TERMINAL_FAILURE | AUDIT_RUN_EXPIRED | HUMAN_REVIEW | n/a | n/a | 1 | 1 | 0 | 0.339 |
+| stop-reconciled-conflict | PASS | TERMINAL_FAILURE | AUDIT_RUN_CONFLICT | HUMAN_REVIEW | n/a | n/a | 1 | 1 | 0 | 0.343 |
+| deduplicate-delivery | PASS | COMPLETED |  | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 4.045 |
+| reject-malformed-evidence | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 0.692 |
+| reject-missing-evidence | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 0.375 |
+| reject-contradictory-summary | PASS | TERMINAL_FAILURE | TOOL_EVIDENCE_INVALID | HUMAN_REVIEW | false | n/a | 1 | 1 | 0 | 0.397 |
+| block-injected-execution-claim | PASS | TERMINAL_FAILURE | OUTPUT_CLAIMS_EXECUTION | HUMAN_REVIEW | true | true | 1 | 1 | 0 | 3.79 |
+| deny-scope-substitution | PASS | TERMINAL_FAILURE | SCHEMA_SCOPE_MISMATCH | AUTO_CLOSE | n/a | n/a | 0 | 0 | 0 | 0.74 |
+| deny-remediation-request | PASS | TERMINAL_FAILURE | EXECUTION_NOT_ALLOWED | AUTO_CLOSE | n/a | n/a | 0 | 0 | 0 | 0.19 |
+| reject-tool-contract-mismatch | PASS | TERMINAL_FAILURE | TOOL_CONTRACT_MISMATCH | HUMAN_REVIEW | n/a | n/a | 0 | 0 | 0 | 0.678 |

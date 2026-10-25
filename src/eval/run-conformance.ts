@@ -22,9 +22,9 @@ import { AgentOrchestrator } from "../runtime/orchestrator.js";
 import { RunReviewService } from "../runtime/run-review.js";
 
 const rootDir = resolve(import.meta.dirname, "../..");
-const SCENARIO_VERSION = "1";
-const AGENT_LAB_CONTRACT_VERSION = "0.3.0";
-const PGTRIAGE_CONTRACT_VERSION = "0.2.1";
+const SCENARIO_VERSION = "2";
+const AGENT_LAB_CONTRACT_VERSION = "0.4.0";
+const PGTRIAGE_CONTRACT_VERSION = "0.3.0";
 
 interface ConformanceCase {
   id: string;
@@ -389,17 +389,69 @@ function buildCases(): readonly ConformanceCase[] {
     },
     {
       id: "stop-ambiguous-post-dispatch",
-      name: "Stop after an ambiguous non-idempotent dispatch",
+      name: "Stop when reconciliation reports an audit still in progress",
       request: request("conformance-ambiguous", "Audit the fixture database."),
       tool: { ambiguousFailureCount: 1 },
       expected: {
         state: "TERMINAL_FAILURE",
-        errorCode: "MCP_AMBIGUOUS_TRANSPORT_FAILURE",
+        errorCode: "AUDIT_RUN_IN_PROGRESS",
         dispatches: 1,
-        reviewRoute: "PRIORITY_REVIEW",
+        reviewRoute: "HUMAN_REVIEW",
         trustedCompletion: false,
       },
     },
+    {
+      id: "recover-ambiguous-completed",
+      name: "Recover completed evidence after an ambiguous response",
+      request: request(
+        "conformance-ambiguous-completed",
+        "Audit the fixture database.",
+      ),
+      tool: { ambiguousFailureCount: 1, ambiguousOutcome: "completed" },
+      expected: {
+        state: "COMPLETED",
+        dispatches: 1,
+        reviewRoute: "HUMAN_REVIEW",
+        trustedCompletion: true,
+      },
+    },
+    {
+      id: "retry-ambiguous-not-found",
+      name: "Retry only after reconciliation proves no operation exists",
+      request: request(
+        "conformance-ambiguous-not-found",
+        "Audit the fixture database.",
+      ),
+      tool: { ambiguousFailureCount: 1, ambiguousOutcome: "not_found" },
+      expected: {
+        state: "COMPLETED",
+        dispatches: 2,
+        reviewRoute: "HUMAN_REVIEW",
+        trustedCompletion: true,
+      },
+    },
+    ...(["failed", "expired", "conflict"] as const).map(
+      (ambiguousOutcome): ConformanceCase => ({
+        id: `stop-reconciled-${ambiguousOutcome}`,
+        name: `Fail closed when reconciliation reports ${ambiguousOutcome}`,
+        request: request(
+          `conformance-reconciled-${ambiguousOutcome}`,
+          "Audit the fixture database.",
+        ),
+        tool: { ambiguousFailureCount: 1, ambiguousOutcome },
+        expected: {
+          state: "TERMINAL_FAILURE",
+          errorCode: {
+            failed: "AUDIT_RUN_FAILED",
+            expired: "AUDIT_RUN_EXPIRED",
+            conflict: "AUDIT_RUN_CONFLICT",
+          }[ambiguousOutcome],
+          dispatches: 1,
+          reviewRoute: "HUMAN_REVIEW",
+          trustedCompletion: false,
+        },
+      }),
+    ),
     {
       id: "deduplicate-delivery",
       name: "Return the durable result for duplicate delivery",
