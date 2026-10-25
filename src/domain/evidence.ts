@@ -73,3 +73,31 @@ export const AuditEvidenceSchema = z
 export type PgTriageFinding = z.infer<typeof PgTriageFindingSchema>;
 export type AuditSummary = z.infer<typeof AuditSummarySchema>;
 export type AuditEvidence = z.infer<typeof AuditEvidenceSchema>;
+
+export const AuditRunStatusSchema = z.enum([
+  "NOT_FOUND",
+  "STARTED",
+  "COMPLETED",
+  "FAILED",
+  "EXPIRED",
+  "CONFLICT",
+]);
+
+export const AuditRunLookupSchema = z
+  .object({
+    audit_run_id: z.string().uuid(),
+    status: AuditRunStatusSchema,
+    provenance: z.record(z.string(), z.unknown()).nullable().optional(),
+    result: AuditEvidenceSchema.nullable().optional(),
+    failure: z
+      .object({
+        code: z.string().nullable().optional(),
+        reason: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .passthrough();
+
+export type AuditRunStatus = z.infer<typeof AuditRunStatusSchema>;
+export type AuditRunLookup = z.infer<typeof AuditRunLookupSchema>;

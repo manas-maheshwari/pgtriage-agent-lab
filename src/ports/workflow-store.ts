@@ -14,6 +14,7 @@ export type WorkflowPatch = Partial<
   Pick<
     WorkflowRecord,
     | "attempt"
+    | "auditRunId"
     | "plan"
     | "planHash"
     | "authorizedTool"

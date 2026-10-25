@@ -1,6 +1,6 @@
 # Eval Report
 
-Generated: 2026-09-26T19:22:58.039Z
+Generated: 2026-10-25T00:10:06.520Z
 
 Passed: 26/26
 
@@ -29,8 +29,8 @@ Success rate: 1
 | recover-model-retry | pass | COMPLETED |  | 1 | 1 | 2 |  |
 | recover-pre-dispatch-tool-retry | pass | COMPLETED |  | 2 | 1 | 2 |  |
 | recover-capability-discovery | pass | COMPLETED |  | 1 | 1 | 2 |  |
-| terminal-ambiguous-dispatch | pass | TERMINAL_FAILURE | MCP_AMBIGUOUS_TRANSPORT_FAILURE | 1 | 1 | 0 |  |
+| terminal-ambiguous-dispatch | pass | TERMINAL_FAILURE | AUDIT_RUN_IN_PROGRESS | 1 | 1 | 0 |  |
 | deny-schema-scope-change | pass | TERMINAL_FAILURE | SCHEMA_SCOPE_MISMATCH | 0 | 0 | 0 |  |
 | allow-schema-scoped-audit | pass | COMPLETED |  | 1 | 1 | 2 |  |
 | reject-execution-claim | pass | TERMINAL_FAILURE | OUTPUT_CLAIMS_EXECUTION | 1 | 1 | 2 |  |
-| terminal-tool-timeout | pass | TERMINAL_FAILURE | TOOL_TIMEOUT | 1 | 1 | 0 |  |
+| terminal-tool-timeout | pass | TERMINAL_FAILURE | AUDIT_RUN_IN_PROGRESS | 1 | 1 | 0 |  |

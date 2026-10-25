@@ -120,13 +120,14 @@ Launch, correctness, and regression work preempt research experiments.
 
 ## Current status
 
-As of October 23, 2026:
+As of October 24, 2026:
 
-- pgtriage 0.2.1 is released with duplicate-index candidate selection;
-- the deterministic conformance baseline passes 11 of 11 scenarios against the
-  recorded pgtriage 0.2.1 contract;
+- pgtriage 0.2.1 remains the public release; the paired 0.3.0 feature branch adds
+  durable audit identity and reconciliation;
+- the deterministic conformance baseline passes 16 of 16 scenarios against the
+  recorded pgtriage 0.3.0 contract;
 - the first bounded harness experiment compared retrieval limits of two and one
-  on the same 11 scenarios;
+  on the same 16 scenarios;
 - both variants preserved safety, but the candidate cut supporting citations in
   half without a measured cost benefit, so the baseline remained active;
 - future experiments remain blocked from changing policy, state, retry,
@@ -136,6 +137,7 @@ As of October 23, 2026:
 
 | Date | Source | Candidate use | Decision |
 | --- | --- | --- | --- |
+| 2026-10-24 | pgtriage/Agent Lab failure analysis | Durable operation identity across ambiguous MCP delivery | Persist a client-generated audit UUID, reconcile before replay, and fail closed unless absence is proven |
 | 2026-10-23 | [Harness^2 paper](https://arxiv.org/abs/2610.14224) and [official repository](https://github.com/google-research/harness2) | Evidence-gated comparison of bounded harness variants | Adopt the experimental method; do not allow policy or state-machine self-modification |
 
 ## Non-goals

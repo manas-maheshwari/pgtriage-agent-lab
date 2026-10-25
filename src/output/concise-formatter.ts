@@ -18,7 +18,7 @@ export function formatConciseWorkflow(workflow: WorkflowRecord): string {
       ? `NOT ALLOWED OR NOT REACHED | ${workflow.error.code}`
       : "NOT REACHED";
   const invocation = workflow.plan
-    ? `${workflow.plan.tool}(${JSON.stringify(toMcpArguments(workflow.plan))})`
+    ? `${workflow.plan.tool}(${JSON.stringify(toMcpArguments(workflow.plan, workflow.auditRunId))})`
     : "not invoked";
   const scopePolicy = workflow.plan
     ? workflow.plan.arguments.schemaName === workflow.request.schemaName

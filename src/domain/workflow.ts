@@ -59,6 +59,7 @@ export const WorkflowRecordSchema = z
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     transitions: z.array(WorkflowTransitionSchema),
+    auditRunId: z.uuid().optional(),
     plan: ToolPlanSchema.optional(),
     authorizedTool: AuthorizedToolSchema.optional(),
     toolEvidence: AuditEvidenceSchema.optional(),

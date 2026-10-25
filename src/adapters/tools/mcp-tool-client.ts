@@ -1,7 +1,11 @@
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 
-import { AuditEvidenceSchema, type ToolPlan } from "../../domain/index.js";
+import {
+  AuditEvidenceSchema,
+  AuditRunLookupSchema,
+  type ToolPlan,
+} from "../../domain/index.js";
 import type { ToolCallContext, ToolClient, ToolDescriptor } from "../../ports/tool-client.js";
 import {
   AgentRuntimeError,
@@ -25,7 +29,7 @@ export class McpToolClient implements ToolClient {
   private async connect(): Promise<Client> {
     if (this.connected && this.client) return this.client;
 
-    const client = new Client({ name: "pgtriage-agent-lab", version: "0.1.0" });
+    const client = new Client({ name: "pgtriage-agent-lab", version: "0.4.0" });
     const transport = new StdioClientTransport({ ...this.config, stderr: "pipe" });
     try {
       await client.connect(transport);
@@ -81,7 +85,7 @@ export class McpToolClient implements ToolClient {
       result = await client.callTool(
         {
           name: plan.tool,
-          arguments: toMcpArguments(plan),
+          arguments: toMcpArguments(plan, context.workflowId),
         },
         { timeout: context.timeoutMs },
       );
@@ -105,19 +109,52 @@ export class McpToolClient implements ToolClient {
       );
     }
 
-    let payload: unknown = result.structuredContent;
-    if (payload === undefined) {
-      const text = result.content.find((item) => item.type === "text");
-      if (!text || text.type !== "text") {
-        throw new AgentRuntimeError("MCP_INVALID_RESULT", "The MCP result contained no structured JSON.", false);
-      }
-      payload = JSON.parse(text.text) as unknown;
-    }
+    const payload = extractPayload(result);
     const parsed = AuditEvidenceSchema.safeParse(payload);
     if (!parsed.success) {
       throw new AgentRuntimeError(
         "MCP_INVALID_RESULT",
         "The MCP result failed structural or summary-consistency validation.",
+        false,
+        { cause: parsed.error },
+      );
+    }
+    return parsed.data;
+  }
+
+  async getAuditRun(auditRunId: string, timeoutMs: number) {
+    const client = await this.connect();
+    let result: Awaited<ReturnType<Client["callTool"]>>;
+    try {
+      result = await client.callTool(
+        {
+          name: "get_audit_run",
+          arguments: { audit_run_id: auditRunId },
+        },
+        { timeout: timeoutMs },
+      );
+    } catch (error) {
+      await this.resetConnection();
+      throw new PreDispatchToolError(
+        "AUDIT_RECONCILIATION_UNAVAILABLE",
+        error instanceof Error
+          ? error.message
+          : "The audit reconciliation lookup failed.",
+        { cause: error },
+      );
+    }
+    if (result.isError) {
+      throw new AgentRuntimeError(
+        "AUDIT_RECONCILIATION_TOOL_ERROR",
+        "The MCP server could not reconcile the audit operation.",
+        false,
+      );
+    }
+    const parsed = AuditRunLookupSchema.safeParse(extractPayload(result));
+    if (!parsed.success) {
+      throw new AgentRuntimeError(
+        "AUDIT_RECONCILIATION_INVALID",
+        "The audit reconciliation response failed runtime validation.",
         false,
         { cause: parsed.error },
       );
@@ -136,13 +173,41 @@ export class McpToolClient implements ToolClient {
   }
 }
 
-export function toMcpArguments(plan: ToolPlan): Record<string, unknown> {
+export function toMcpArguments(
+  plan: ToolPlan,
+  auditRunId?: string,
+): Record<string, unknown> {
   return {
     slow_query_limit: plan.arguments.slowQueryLimit,
+    ...(auditRunId === undefined ? {} : { audit_run_id: auditRunId }),
     ...(plan.arguments.schemaName === undefined
       ? {}
       : { schema_name: plan.arguments.schemaName }),
   };
+}
+
+function extractPayload(
+  result: Awaited<ReturnType<Client["callTool"]>>,
+): unknown {
+  if (result.structuredContent !== undefined) return result.structuredContent;
+  const text = result.content.find((item) => item.type === "text");
+  if (!text || text.type !== "text") {
+    throw new AgentRuntimeError(
+      "MCP_INVALID_RESULT",
+      "The MCP result contained no structured JSON.",
+      false,
+    );
+  }
+  try {
+    return JSON.parse(text.text) as unknown;
+  } catch (error) {
+    throw new AgentRuntimeError(
+      "MCP_INVALID_RESULT",
+      "The MCP result text was not valid JSON.",
+      false,
+      { cause: error },
+    );
+  }
 }
 
 async function safelyClose(client: Client): Promise<void> {

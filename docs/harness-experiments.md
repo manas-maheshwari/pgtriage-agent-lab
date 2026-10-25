@@ -24,8 +24,8 @@ The runner writes machine-readable and reviewable reports to:
 - `artifacts/harness-experiment-report.json`;
 - `artifacts/harness-experiment-report.md`.
 
-Both variants run the same 11 conformance scenarios against the recorded
-pgtriage 0.2.1 contract. Configuration, scenario, model, outcome, and report
+Both variants run the same 16 conformance scenarios against the recorded
+pgtriage 0.3.0 contract. Configuration, scenario, model, outcome, and report
 hashes identify the exact evidence used in the comparison. Wall-clock latency is
 reported but excluded from reproducible hashes and the decision because it is
 too noisy in this local fixture run.
@@ -33,7 +33,7 @@ too noisy in this local fixture run.
 ## Recorded result
 
 Both configurations preserved the deterministic safety baseline. The candidate
-reduced supporting citations from eight to four and produced no measured token,
+reduced supporting citations from twelve to six and produced no measured token,
 cost, or latency benefit. The runner therefore retained
 `baseline-retrieval-2-v1` and persisted that negative result as the lesson.
 

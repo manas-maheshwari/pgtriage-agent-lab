@@ -1,4 +1,8 @@
-import type { AuditEvidence, ToolPlan } from "../domain/index.js";
+import type {
+  AuditEvidence,
+  AuditRunLookup,
+  ToolPlan,
+} from "../domain/index.js";
 
 export interface ToolDescriptor {
   name: string;
@@ -18,5 +22,6 @@ export interface ToolCallContext {
 export interface ToolClient {
   listTools(): Promise<readonly ToolDescriptor[]>;
   callTool(plan: ToolPlan, context: ToolCallContext): Promise<AuditEvidence>;
+  getAuditRun(auditRunId: string, timeoutMs: number): Promise<AuditRunLookup>;
   close(): Promise<void>;
 }

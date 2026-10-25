@@ -27,6 +27,7 @@ export function realPgTriageToolClient(): McpToolClient {
       : {}),
     env: {
       PGTRIAGE_CONNECTION_STRING: connectionString,
+      ...optionalPgTriageStateEnv(),
       ...controlledRuntimeEnv(),
     },
   });
@@ -57,4 +58,20 @@ function commandArgsConfig(value: string | undefined): { args?: string[] } {
 
 function controlledRuntimeEnv(): Record<string, string> {
   return process.env.PATH ? { PATH: process.env.PATH } : {};
+}
+
+export function optionalPgTriageStateEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  const allowed = [
+    "PGTRIAGE_AUDIT_STORE_PATH",
+    "PGTRIAGE_AUDIT_RETENTION_HOURS",
+    "PGTRIAGE_AUDIT_TOMBSTONE_HOURS",
+  ] as const;
+  return Object.fromEntries(
+    allowed.flatMap((name) => {
+      const value = env[name];
+      return value === undefined ? [] : [[name, value]];
+    }),
+  );
 }
