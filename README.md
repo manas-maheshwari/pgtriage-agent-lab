@@ -54,6 +54,7 @@ prints an advisory result using synthetic diagnostics.
 | Post-run review | `npm run demo:review` | Deterministic closure and escalation routing |
 | Conformance suite | `npm run eval:conformance` | Failure injection across the pgtriage/client boundary |
 | Harness experiment | `npm run experiment:harness` | Compare one bounded configuration change under the same safety gates |
+| Reviewer-influence experiment | `npm run experiment:reviewer-influence -- prepare --participant reviewer-001` | Measure whether model advice shifts human judgment without changing production routing |
 | Real pgtriage | `npm run demo:real:concise` | Explicitly approved diagnostics against a configured database |
 
 Read the [integration guide](docs/local-runtime.md) before using the real pgtriage
@@ -132,6 +133,7 @@ remaining gaps and the design changes that followed testing.
 | [Post-run review](docs/run-review.md) | Understand the Jev routing layer |
 | [Conformance](docs/conformance.md) | Inspect failure injection and boundary metrics |
 | [Harness experiments](docs/harness-experiments.md) | Inspect controlled baseline-versus-candidate evidence |
+| [Reviewer influence](docs/reviewer-influence-experiment.md) | Test whether model advice compromises independent human review |
 | [Research program](docs/research-program.md) | See how papers become bounded, measured experiments |
 | [Cloudflare notes](cloudflare/README.md) | Inspect the hosted chat implementation |
 | [Privacy review](docs/review/PRIVACY-CHECK.md) | Review publication and data-handling checks |

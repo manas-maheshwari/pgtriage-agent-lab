@@ -137,6 +137,7 @@ As of October 24, 2026:
 
 | Date | Source | Candidate use | Decision |
 | --- | --- | --- | --- |
+| 2026-10-29 | [Anthropic: How AI agents shape experts' judgment calls](https://www.anthropic.com/research/agents-judgment-calls) | Measure whether Jev advice shifts a human reviewer between defensible routes | Add a randomized three-arm study harness; do not change production routing without measured evidence and a separate decision |
 | 2026-10-24 | pgtriage/Agent Lab failure analysis | Durable operation identity across ambiguous MCP delivery | Persist a client-generated audit UUID, reconcile before replay, and fail closed unless absence is proven |
 | 2026-10-23 | [Harness^2 paper](https://arxiv.org/abs/2610.14224) and [official repository](https://github.com/google-research/harness2) | Evidence-gated comparison of bounded harness variants | Adopt the experimental method; do not allow policy or state-machine self-modification |
 
