@@ -46,6 +46,18 @@ export {
   type RunReviewState,
 } from "./run-review.js";
 export {
+  ReviewerInfluenceArmSchema,
+  ReviewerInfluenceAssignmentSchema,
+  ReviewerInfluenceCaseSchema,
+  ReviewerInfluenceDatasetSchema,
+  ReviewerInfluenceObservationSchema,
+  type ReviewerInfluenceArm,
+  type ReviewerInfluenceAssignment,
+  type ReviewerInfluenceCase,
+  type ReviewerInfluenceDataset,
+  type ReviewerInfluenceObservation,
+} from "./reviewer-influence.js";
+export {
   FullAuditArgumentsSchema,
   ToolPlanSchema,
   type FullAuditArguments,
