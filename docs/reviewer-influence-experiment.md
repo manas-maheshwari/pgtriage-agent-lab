@@ -36,13 +36,15 @@ npm run experiment:reviewer-influence -- prepare --participant reviewer-001
 ```
 
 The command writes a local, gitignored directory under
-`runs/reviewer-influence/` containing:
+`runs/reviewer-influence/<participant-id>/` with two separate trust domains:
 
-- a participant packet;
-- a response template;
-- a coordinator-only manifest with sealed advice and the assignment hash.
+- `participant/` contains the participant packet, response template, and
+  participant instructions;
+- `coordinator/` contains the sealed advice, assignment hash, and reveal
+  instructions.
 
-Use pseudonymous participant IDs. Do not commit manifests or responses.
+Only share the `participant/` directory with the participant. Use pseudonymous
+participant IDs. Do not commit manifests or responses.
 
 ## Analyze completed observations
 

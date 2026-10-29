@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { ReviewerInfluenceDatasetSchema } from "../domain/reviewer-influence.js";
 import {
   analyzeReviewerInfluence,
-  prepareReviewerInfluenceStudy,
   type ReviewerInfluenceReport,
 } from "./reviewer-influence.js";
+import { writeReviewerInfluenceStudyArtifacts } from "./reviewer-influence-artifacts.js";
 
 const rootDir = resolve(import.meta.dirname, "../..");
 
@@ -28,23 +28,12 @@ async function main(): Promise<void> {
 }
 
 async function prepare(participantId: string): Promise<void> {
-  const study = prepareReviewerInfluenceStudy(participantId);
-  const outputDir = resolve(rootDir, "runs/reviewer-influence", participantId);
-  await mkdir(outputDir, { recursive: true });
-  await Promise.all([
-    writeJson(resolve(outputDir, "participant-packet.json"), study.participantPacket),
-    writeJson(
-      resolve(outputDir, "coordinator-manifest.json"),
-      study.coordinatorManifest,
-    ),
-    writeJson(
-      resolve(outputDir, "response-template.json"),
-      study.responseTemplate,
-    ),
-    writeFile(resolve(outputDir, "README.md"), participantInstructions(), "utf8"),
-  ]);
+  const paths = await writeReviewerInfluenceStudyArtifacts(
+    participantId,
+    resolve(rootDir, "runs/reviewer-influence"),
+  );
   process.stdout.write(
-    `Prepared a blinded study packet in ${outputDir}. Keep coordinator-manifest.json hidden from the participant.\n`,
+    `Prepared participant materials in ${paths.participantDir} and sealed coordinator materials in ${paths.coordinatorDir}.\n`,
   );
 }
 
@@ -74,24 +63,6 @@ function argument(args: readonly string[], name: string): string | undefined {
 
 async function writeJson(path: string, value: unknown): Promise<void> {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-}
-
-function participantInstructions(): string {
-  return `# Reviewer-influence study packet
-
-This directory is local and gitignored. Use a pseudonymous participant ID.
-
-1. The participant reads \`participant-packet.json\` in order.
-2. For \`NO_MODEL\`, record only a final route.
-3. For \`MODEL_BEFORE_INITIAL\`, show the included advice before the route choice.
-4. For \`MODEL_AFTER_INITIAL\`, record the initial route first. Only then may the
-   coordinator reveal the matching advice from \`coordinator-manifest.json\`.
-5. Record the final route and elapsed decision time in
-   \`response-template.json\`.
-
-Never show the coordinator manifest before the required decision point. Do not
-commit participant responses or identifiers.
-`;
 }
 
 function markdownReport(report: ReviewerInfluenceReport): string {

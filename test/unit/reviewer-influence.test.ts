@@ -1,3 +1,7 @@
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import type {
@@ -10,6 +14,9 @@ import {
   analyzeReviewerInfluence,
   prepareReviewerInfluenceStudy,
 } from "../../src/experiments/reviewer-influence.js";
+import {
+  writeReviewerInfluenceStudyArtifacts,
+} from "../../src/experiments/reviewer-influence-artifacts.js";
 
 describe("reviewer-influence experiment", () => {
   it("balances six cases across the three exposure arms", () => {
@@ -44,6 +51,41 @@ describe("reviewer-influence experiment", () => {
     expect(JSON.stringify(study.participantPacket)).not.toContain(
       study.coordinatorManifest.assignmentHash,
     );
+  });
+
+  it("separates participant materials from sealed coordinator artifacts", async () => {
+    const outputRoot = await mkdtemp(
+      resolve(tmpdir(), "agent-lab-reviewer-influence-"),
+    );
+    try {
+      const paths = await writeReviewerInfluenceStudyArtifacts(
+        "reviewer-001",
+        outputRoot,
+      );
+
+      expect((await readdir(paths.participantDir)).sort()).toEqual([
+        "README.md",
+        "participant-packet.json",
+        "response-template.json",
+      ]);
+      expect((await readdir(paths.coordinatorDir)).sort()).toEqual([
+        "README.md",
+        "coordinator-manifest.json",
+      ]);
+
+      const participantReadme = await readFile(
+        resolve(paths.participantDir, "README.md"),
+        "utf8",
+      );
+      const coordinatorManifest = await readFile(
+        resolve(paths.coordinatorDir, "coordinator-manifest.json"),
+        "utf8",
+      );
+      expect(participantReadme).not.toContain("coordinator-manifest.json");
+      expect(coordinatorManifest).toContain('"assignmentHash"');
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true });
+    }
   });
 
   it("produces reproducible assignments for a pseudonymous participant", () => {

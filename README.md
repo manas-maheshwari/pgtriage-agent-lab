@@ -133,7 +133,7 @@ remaining gaps and the design changes that followed testing.
 | [Post-run review](docs/run-review.md) | Understand the Jev routing layer |
 | [Conformance](docs/conformance.md) | Inspect failure injection and boundary metrics |
 | [Harness experiments](docs/harness-experiments.md) | Inspect controlled baseline-versus-candidate evidence |
-| [Reviewer influence](docs/reviewer-influence-experiment.md) | Test whether model advice compromises independent human review |
+| [Reviewer influence](docs/reviewer-influence-experiment.md) | Measure whether model advice shifts human review choices |
 | [Research program](docs/research-program.md) | See how papers become bounded, measured experiments |
 | [Cloudflare notes](cloudflare/README.md) | Inspect the hosted chat implementation |
 | [Privacy review](docs/review/PRIVACY-CHECK.md) | Review publication and data-handling checks |
