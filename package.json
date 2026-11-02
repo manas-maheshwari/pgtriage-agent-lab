@@ -37,6 +37,7 @@
     "eval:conformance": "tsx src/eval/run-conformance.ts",
     "eval:review": "tsx src/eval/run-review-eval.ts",
     "experiment:harness": "tsx src/experiments/run-harness-experiment.ts",
+    "experiment:shadow-audit": "tsx src/experiments/run-shadow-audit-experiment.ts",
     "experiment:adopt": "tsx src/experiments/adopt-harness-candidate.ts",
     "experiment:reviewer-influence": "tsx src/experiments/run-reviewer-influence-experiment.ts",
     "dev:cloudflare": "wrangler dev --local --ip 127.0.0.1 --persist-to .wrangler/state",
