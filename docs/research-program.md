@@ -107,6 +107,18 @@ timestamps, statistics-reset context, and an evidence hash.
 Agent Lab can then reconcile a known audit operation after an ambiguous client
 failure instead of blindly repeating work or relying only on a local timeout.
 
+## Track D: random-negative shadow audits
+
+The primary review path is evaluated against known fixtures and registered
+failure classes. A bounded offline experiment now samples 5% of eligible,
+unflagged auto-close fixture runs into a second-stage review to measure misses
+that the primary screen would otherwise hide.
+
+The experiment cannot change production routing. It records seeded-miss recall,
+false-positive alerts, review volume, estimated cost, route mutations, and
+production latency. A candidate is rejected if it finds no seeded miss, exceeds
+the registered false-positive threshold, or changes any production decision.
+
 ## Sequence
 
 1. Complete and release pgtriage 0.2.0 duplicate-index candidate selection.
@@ -120,7 +132,7 @@ Launch, correctness, and regression work preempt research experiments.
 
 ## Current status
 
-As of October 24, 2026:
+As of November 2, 2026:
 
 - pgtriage 0.2.1 remains the public release; the paired 0.3.0 feature branch adds
   durable audit identity and reconciliation;
@@ -130,6 +142,11 @@ As of October 24, 2026:
   on the same 16 scenarios;
 - both variants preserved safety, but the candidate cut supporting citations in
   half without a measured cost benefit, so the baseline remained active;
+- the reviewer-influence study harness is available for a discarded procedural
+  pilot before any real observations are collected;
+- the random-negative shadow-audit fixture sampled 98 eligible runs, found three
+  seeded primary-screen misses, and added no production route mutation or
+  latency; the result supports further offline evaluation only;
 - future experiments remain blocked from changing policy, state, retry,
   tool-authorization, or output-validation code.
 
@@ -137,6 +154,7 @@ As of October 24, 2026:
 
 | Date | Source | Candidate use | Decision |
 | --- | --- | --- | --- |
+| 2026-11-02 | [OpenAI: How we detect frontier model misalignment](https://openai.com/index/how-we-detect-frontier-model-misalignment/) | Randomly audit a subset of unflagged runs to estimate monitor false negatives | Add an offline 5% fixture experiment; do not change production routing or adopt a live sampling rate from synthetic results |
 | 2026-10-29 | [Anthropic: How AI agents shape experts' judgment calls](https://www.anthropic.com/research/agents-judgment-calls) | Measure whether Jev advice shifts a human reviewer between defensible routes | Add a randomized three-arm study harness; do not change production routing without measured evidence and a separate decision |
 | 2026-10-24 | pgtriage/Agent Lab failure analysis | Durable operation identity across ambiguous MCP delivery | Persist a client-generated audit UUID, reconcile before replay, and fail closed unless absence is proven |
 | 2026-10-23 | [Harness^2 paper](https://arxiv.org/abs/2610.14224) and [official repository](https://github.com/google-research/harness2) | Evidence-gated comparison of bounded harness variants | Adopt the experimental method; do not allow policy or state-machine self-modification |
