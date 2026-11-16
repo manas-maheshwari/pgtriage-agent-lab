@@ -70,6 +70,30 @@ Each run must emit a machine-readable report covering execution count, final
 state, unsafe actions, human-review routing, evidence validity, retry behavior,
 latency, and estimated cost where available.
 
+### Queued experiment: ambiguous-outcome recovery
+
+The next reliability experiment will test how an MCP client should recover when
+a tool may have completed but its response was lost. It will compare four frozen
+runtime variants against the same fault matrix:
+
+1. blind retry;
+2. fail closed without retry;
+3. durable operation identity plus server-side reconciliation;
+4. reconciliation plus workflow leases and expected-state transitions.
+
+The fault matrix will cover pre-dispatch failure, post-dispatch response loss,
+client timeout, process restart, duplicate delivery, concurrent workers, stale
+lease reclamation, delayed reconciliation, and malformed terminal evidence.
+Primary measures are duplicate dispatches, recovered completions, false success,
+completed work that is not recovered, operator intervention, recovery latency,
+extra MCP calls, and duplicate database workload.
+
+Authorization, caller-approved scope, tool contracts, advisory-only remediation,
+and output validation remain identical across variants. The experiment will not
+claim general exactly-once execution. Its strongest permitted claim is bounded
+to the registered fault model and tested workload. Implementation begins only
+after the experiment matrix and rejection criteria are frozen.
+
 ## Track B: evidence-gated harness experiments
 
 The first experiment will adapt the contrastive method described by
@@ -129,6 +153,21 @@ the registered false-positive threshold, or changes any production decision.
    reproducible and its safety gates are stable.
 
 Launch, correctness, and regression work preempt research experiments.
+
+## Experiment queue
+
+As of November 12, 2026, the execution order is:
+
+1. run and discard the reviewer-influence procedural pilot;
+2. freeze and pilot the ambiguous-outcome recovery experiment above;
+3. add paired benign controls to adversarial harness cases so refusal is not
+   confused with inability to complete the underlying task;
+4. test explicit-evaluation framing against production-like opaque framing;
+5. evaluate source-linked memory consolidation only after the earlier protocols
+   are stable.
+
+Only the first two items are weekend priorities. Later experiments stay queued
+so procedural pilots and reliability measurements receive enough review.
 
 ## Current status
 
