@@ -46,6 +46,11 @@ The command writes a local, gitignored directory under
 Only share the `participant/` directory with the participant. Use pseudonymous
 participant IDs. Do not commit manifests or responses.
 
+For the first discarded procedure test, follow
+[`reviewer-influence-pilot-runbook.md`](reviewer-influence-pilot-runbook.md).
+The generated participant directory includes a feedback form. Keep only that
+procedural feedback; do not merge pilot choices into a study dataset.
+
 ## Analyze completed observations
 
 Merge completed responses with their coordinator assignments into the dataset

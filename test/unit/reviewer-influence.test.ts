@@ -66,6 +66,7 @@ describe("reviewer-influence experiment", () => {
       expect((await readdir(paths.participantDir)).sort()).toEqual([
         "README.md",
         "participant-packet.json",
+        "pilot-feedback.md",
         "response-template.json",
       ]);
       expect((await readdir(paths.coordinatorDir)).sort()).toEqual([
@@ -82,6 +83,7 @@ describe("reviewer-influence experiment", () => {
         "utf8",
       );
       expect(participantReadme).not.toContain("coordinator-manifest.json");
+      expect(participantReadme).toContain("decisions from this pilot will be discarded");
       expect(coordinatorManifest).toContain('"assignmentHash"');
     } finally {
       await rm(outputRoot, { recursive: true, force: true });

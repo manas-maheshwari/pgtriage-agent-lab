@@ -159,7 +159,8 @@ Launch, correctness, and regression work preempt research experiments.
 As of November 12, 2026, the execution order is:
 
 1. run and discard the reviewer-influence procedural pilot;
-2. freeze and pilot the ambiguous-outcome recovery experiment above;
+2. reproduce the frozen ambiguous-outcome recovery fixture result through MCP
+   stdio with real response loss and process restart;
 3. add paired benign controls to adversarial harness cases so refusal is not
    confused with inability to complete the underlying task;
 4. test explicit-evaluation framing against production-like opaque framing;
@@ -171,10 +172,10 @@ so procedural pilots and reliability measurements receive enough review.
 
 ## Current status
 
-As of November 2, 2026:
+As of November 16, 2026:
 
-- pgtriage 0.2.1 remains the public release; the paired 0.3.0 feature branch adds
-  durable audit identity and reconciliation;
+- pgtriage 0.3.0 is the public release; the stale-worker generation guard has
+  merged after that release and remains unreleased;
 - the deterministic conformance baseline passes 16 of 16 scenarios against the
   recorded pgtriage 0.3.0 contract;
 - the first bounded harness experiment compared retrieval limits of two and one
@@ -182,7 +183,16 @@ As of November 2, 2026:
 - both variants preserved safety, but the candidate cut supporting citations in
   half without a measured cost benefit, so the baseline remained active;
 - the reviewer-influence study harness is available for a discarded procedural
-  pilot before any real observations are collected;
+  pilot before any real observations are collected, with participant and
+  coordinator materials kept in separate directories;
+- the first ambiguous-outcome recovery pilot ran all four frozen variants over
+  nine deterministic contract-level faults; reconciliation recovered five
+  ambiguous completions without duplicate database work, while leases and
+  expected-state transitions reduced duplicate workflow advancement from three
+  cases to zero;
+- that recovery result remains fixture-level evidence and must be reproduced
+  through MCP stdio and process restarts before publication-facing claims are
+  expanded;
 - the random-negative shadow-audit fixture sampled 98 eligible runs, found three
   seeded primary-screen misses, and added no production route mutation or
   latency; the result supports further offline evaluation only;
