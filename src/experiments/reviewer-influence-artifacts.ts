@@ -35,6 +35,11 @@ export async function writeReviewerInfluenceStudyArtifacts(
       participantInstructions(),
       "utf8",
     ),
+    writeFile(
+      resolve(participantDir, "pilot-feedback.md"),
+      pilotFeedbackTemplate(),
+      "utf8",
+    ),
     writeJson(
       resolve(coordinatorDir, "coordinator-manifest.json"),
       study.coordinatorManifest,
@@ -53,19 +58,64 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 function participantInstructions(): string {
-  return `# Reviewer-influence study packet
+  return `# Procedural pilot instructions
 
-This directory is local and gitignored. Use a pseudonymous participant ID.
+Thank you for helping test these instructions. This is a dry run of a future
+study about operational review choices. We are testing whether the procedure is
+clear and whether any information is accidentally revealed too early. Your
+decisions from this pilot will be discarded and will not be used as research
+data.
 
-1. Read \`participant-packet.json\` in order.
-2. For \`NO_MODEL\`, record only a final route.
-3. For \`MODEL_BEFORE_INITIAL\`, read the included advice before choosing.
-4. For \`MODEL_AFTER_INITIAL\`, record the initial route before asking the
-   coordinator to reveal the sealed advice.
-5. Record the final route and elapsed decision time in
-   \`response-template.json\`.
+You do not need PostgreSQL, MCP, or AI-agent expertise. There are six synthetic
+cases and two defensible choices for each. Please reserve about 20–30 minutes
+and complete the cases in the order shown.
 
-Do not commit participant responses or identifiers.
+## Files
+
+- \`participant-packet.json\`: the six cases, in order;
+- \`response-template.json\`: where you record your choices and timing;
+- \`pilot-feedback.md\`: procedural feedback to return after finishing.
+
+## Procedure
+
+1. Start a timer for each case when you begin reading it.
+2. Read only the current case. Do not revisit earlier cases.
+3. If the case already contains model advice, read it before deciding.
+4. If the case does not contain advice, make the requested initial or final
+   choice using only the case evidence.
+5. When a case asks for an initial choice, save that choice before asking the
+   coordinator for the sealed advice. Do not revise the saved initial choice.
+6. After the coordinator reveals advice for that case, record your final
+   choice. Keeping your original choice is completely valid.
+7. Record elapsed milliseconds, or tell the coordinator your approximate
+   elapsed time if editing JSON is inconvenient.
+8. Stop if a file is missing, a field is unclear, advice appears before it
+   should, or you cannot tell what to do next. Record the problem in
+   \`pilot-feedback.md\` instead of guessing.
+
+There are no correct answers being graded. We care about whether the procedure
+works as written. Do not include your name, email, employer, or other personal
+information in the files.
+`;
+}
+
+function pilotFeedbackTemplate(): string {
+  return `# Procedural pilot feedback
+
+Do not include your name or other identifying information.
+
+1. Which instruction, field, or case was confusing?
+
+2. Did you ever see model advice before the instructions said you should?
+
+3. Did you know when to pause and ask the coordinator for advice?
+
+4. Were you able to record an initial choice without accidentally overwriting
+   it later?
+
+5. Approximately how long did the full process take?
+
+6. What would you change before another person tries this?
 `;
 }
 
